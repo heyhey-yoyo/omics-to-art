@@ -224,7 +224,7 @@ function Workspace(): React.JSX.Element {
 }
 
 function Header({ onReset }: { onReset: () => void }): React.JSX.Element {
-  return <header className="topbar"><button className="brand" onClick={onReset}><span className="brand-mark">O/A</span><span><strong>Omics to Art</strong><small>组学画布</small></span></button><nav><a href="/methods">方法</a><a href="/privacy">隐私</a><a href="/about">关于</a><a href="/about">开源</a></nav></header>;
+  return <header className="topbar"><button className="brand" onClick={onReset}><span className="brand-mark">O/A</span><span><strong>Omics to Art</strong><small>组学画布</small></span></button><nav><a href="/methods">方法</a><a href="/privacy">隐私</a><a href="/about">关于</a></nav></header>;
 }
 
 function Home(props: {
