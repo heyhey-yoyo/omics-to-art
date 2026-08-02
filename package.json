@@ -28,7 +28,7 @@
     "@cloudflare/workers-types": "5.20260727.1",
     "@playwright/test": "1.62.0",
     "@types/node": "24.1.0",
-    "typescript": "5.9.2",
+    "typescript": "7.0.2",
     "vitest": "4.1.10",
     "wrangler": "4.114.0"
   }
