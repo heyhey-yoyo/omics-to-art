@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": [
+      "ES2023",
+      "DOM",
+      "DOM.Iterable",
+      "WebWorker"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "useDefineForClassFields": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@omics-to-art/shared": [
+        "packages/shared/src/index.ts"
+      ],
+      "@omics-to-art/data-engine": [
+        "packages/data-engine/src/index.ts"
+      ],
+      "@omics-to-art/art-engine": [
+        "packages/art-engine/src/index.ts"
+      ],
+      "@omics-to-art/templates": [
+        "packages/templates/src/index.ts"
+      ]
+    }
+  }
+}

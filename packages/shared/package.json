@@ -1,0 +1,9 @@
+{
+  "name": "@omics-to-art/shared",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

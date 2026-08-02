@@ -1,0 +1,35 @@
+{
+  "name": "omics-to-art",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@10.9.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @omics-to-art/web",
+    "build": "npm run build -w @omics-to-art/web",
+    "typecheck": "tsc -p packages/shared/tsconfig.json && tsc -p packages/data-engine/tsconfig.json && tsc -p packages/art-engine/tsconfig.json && tsc -p packages/templates/tsconfig.json && tsc -p worker/tsconfig.json && tsc -p apps/web/tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm run test && npm run build",
+    "deploy": "npm run build && wrangler deploy",
+    "cf:typegen": "wrangler types worker/src/worker-configuration.d.ts",
+    "dev:web": "npm run dev -w @omics-to-art/web",
+    "dev:worker": "wrangler dev"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260727.1",
+    "@playwright/test": "1.62.0",
+    "@types/node": "24.1.0",
+    "typescript": "5.9.2",
+    "vitest": "4.1.10",
+    "wrangler": "4.114.0"
+  }
+}

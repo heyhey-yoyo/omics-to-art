@@ -1,0 +1,30 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          package-manager-cache: false
+      - name: Install locked dependencies
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        run: npm ci --ignore-scripts
+      - name: Install dependencies (temporary fallback until lockfile is committed)
+        if: ${{ hashFiles('package-lock.json') == '' }}
+        run: |
+          echo '::warning::package-lock.json is missing; generate and commit it before production release.'
+          npm install --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
