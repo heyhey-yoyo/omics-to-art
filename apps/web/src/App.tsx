@@ -18,6 +18,7 @@ import { ApiError, fetchFiles } from "./api";
 import { canvasToBlob, copyText, createZip, downloadBlob, manifestReadme } from "./export";
 import { SOURCE_FILE_HARD_LIMIT_BYTES, SOURCE_FILE_WARNING_BYTES } from "./limits";
 import { DEFAULT_ARTWORK_CONFIG, encodeShareState, readShareState, type SharedArtworkState } from "./share-state";
+import { loadSavedPresets, persistSavedPresets, type SavedPreset } from "./preset-storage";
 
 type Stage = "home" | "checking" | "files" | "processing" | "studio";
 type WorkerMessage =
@@ -26,6 +27,7 @@ type WorkerMessage =
   | { type: "cancelled" }
   | { type: "error"; message: string; diagnostic: string };
 
+const THEME_OPTIONS: ArtworkConfig["theme"][] = ["dark-observatory", "paper-ink", "fluorescence", "solar-flare", "ice-glass", "violet-night"];
 
 
 export function App(): React.JSX.Element {
@@ -240,15 +242,15 @@ function Home(props: {
     <section className="hero">
       <div className="eyebrow">ACADEMIC · PLAYFUL · REPRODUCIBLE</div>
       <h1>Turn public omics data<br />into interpretable art.</h1>
-      <p>把真实的组学数据，变成一幅可以解释、复现和分享的作品。每一种形状、位置和纹理都对应明确的数据变量。</p>
+      <p>把真实的组学数据，变成一幅可以解释、复现和分享的作品。10 种视觉模板、6 套主题，并加入可拖拽旋转的 3D 数据雕塑。</p>
       <div className="accession-box">
         <label htmlFor="gse">Enter a GEO Series accession</label>
-        <div className="input-row"><span>GSE</span><input id="gse" value={props.accession.replace(/^GSE/i, "")} onChange={(event: React.ChangeEvent<HTMLInputElement>) => props.setAccession(`GSE${event.currentTarget.value.replace(/\D/g, "")}`)} onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => { if (event.key === "Enter") void props.inspectGeo(); }} inputMode="numeric" placeholder="164073" /><button onClick={() => void props.inspectGeo()}>检查数据</button></div>
+        <div className="input-row"><label htmlFor="gse">GSE</label><input id="gse" value={props.accession.replace(/^GSE/i, "")} onChange={(event: React.ChangeEvent<HTMLInputElement>) => props.setAccession(`GSE${event.currentTarget.value.replace(/\D/g, "")}`)} onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => { if (event.key === "Enter") void props.inspectGeo(); }} inputMode="numeric" placeholder="164073" /><button onClick={() => void props.inspectGeo()}>检查数据</button></div>
       </div>
       {props.error && <ErrorNotice message={props.error} diagnostic={props.diagnostic} />}
       <div className="entry-grid">
-        <button className="entry-card" onClick={props.useDemo}><span>01</span><strong>表达矩阵示例</strong><p>体验表达星图、转录组织锦和样本指纹。</p></button>
-        <button className="entry-card" onClick={props.useDifferentialDemo}><span>02</span><strong>差异花园示例</strong><p>使用已提供的 log2FC 与 padj 生成 Differential Bloom。</p></button>
+        <button className="entry-card" onClick={props.useDemo}><span>01</span><strong>表达矩阵示例</strong><p>体验星图、流场、马赛克，以及可旋转的 3D 基因轨道与表达地形。</p></button>
+        <button className="entry-card" onClick={props.useDifferentialDemo}><span>02</span><strong>差异花园示例</strong><p>使用已提供的 log2FC 与 padj 生成 Differential Bloom、差异星云和 3D 数据雕塑。</p></button>
         <button className="entry-card" onClick={() => fileInput.current?.click()}><span>03</span><strong>本地上传</strong><p>CSV / TSV / gzip 只在浏览器中处理，不会上传。</p></button>
         <a className="entry-card" href="/methods"><span>04</span><strong>查看方法</strong><p>了解表达变换、特征选择和视觉映射规则。</p></a>
       </div>
@@ -287,13 +289,129 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
   const [hovered, setHovered] = useState<VisualFeature | null>(null);
   const [geneQuery, setGeneQuery] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [touring, setTouring] = useState(false);
+  const [savedPresets, setSavedPresets] = useState<SavedPreset[]>(() => loadSavedPresets());
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stageRef = useRef<HTMLElement>(null);
+  const dragRef = useRef<{ x: number; y: number; azimuth: number; elevation: number; moved: boolean } | null>(null);
+  const cameraFrameRef = useRef<number | null>(null);
+  const pendingCameraRef = useRef<Pick<ArtworkConfig, "cameraAzimuth" | "cameraElevation"> | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
   const activeDataset = useMemo(() => filterDatasetSamples(dataset, selectedSamples), [dataset, selectedSamples]);
-  const availableTemplates = templates.filter((template) => template.supports(activeDataset));
-  const template = templateRegistry[config.template];
+  const availableTemplates = templates.filter((item) => item.supports(activeDataset));
+  const template = templateRegistry[config.template] ?? templateRegistry["expression-constellation"];
   const effectiveTemplate = template.supports(activeDataset) ? template : availableTemplates[0] ?? templateRegistry["expression-constellation"];
   const effectiveConfig = effectiveTemplate.id === config.template ? config : { ...config, template: effectiveTemplate.id, templateVersion: effectiveTemplate.version };
   const artwork = useMemo(() => effectiveTemplate.prepare(activeDataset, effectiveConfig), [activeDataset, effectiveTemplate, effectiveConfig]);
+  const is3d = effectiveTemplate.dimension === "3d";
+
+  const updateConfig = (patch: Partial<ArtworkConfig>): void => setConfig((current) => ({ ...current, ...patch }));
+  const scheduleCameraUpdate = (cameraAzimuth: number, cameraElevation: number): void => {
+    pendingCameraRef.current = { cameraAzimuth, cameraElevation };
+    if (cameraFrameRef.current !== null) return;
+    cameraFrameRef.current = window.requestAnimationFrame(() => {
+      cameraFrameRef.current = null;
+      const pending = pendingCameraRef.current;
+      pendingCameraRef.current = null;
+      if (pending) setConfig((current) => ({ ...current, ...pending }));
+    });
+  };
+  const showToast = (message: string): void => {
+    setToast(message);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setToast(null), 2500);
+  };
+  const selectTemplate = (id: TemplateId): void => updateConfig({ template: id, templateVersion: templateRegistry[id].version });
+  const highlightGene = (): void => {
+    const query = geneQuery.trim().toUpperCase();
+    const match = activeDataset.features.find((feature) => feature.id.toUpperCase() === query || feature.symbol?.toUpperCase() === query);
+    if (!match) { showToast("当前数据中没有找到该基因"); return; }
+    updateConfig({ highlightedGene: match.id });
+    setHovered(match);
+  };
+  const randomGene = (): void => {
+    const pool = activeDataset.features.slice(0, Math.min(activeDataset.features.length, Math.max(50, effectiveConfig.geneCount)));
+    const match = pool[Math.floor(Math.random() * pool.length)];
+    if (!match) return;
+    setGeneQuery(match.symbol ?? match.id);
+    updateConfig({ highlightedGene: match.id });
+    setHovered(match);
+    showToast(`发现基因：${match.symbol ?? match.id}`);
+  };
+  const clearHighlight = (): void => setConfig((current) => {
+    const { highlightedGene: _unused, ...rest } = current;
+    return rest;
+  });
+  const surprise = (): void => {
+    const candidates = templates.filter((item) => item.supports(activeDataset));
+    const nextTemplate = candidates[Math.floor(Math.random() * candidates.length)] ?? effectiveTemplate;
+    const maxGenes = Math.max(1, Math.min(5000, activeDataset.features.length));
+    const minGenes = Math.min(maxGenes, Math.max(80, Math.floor(maxGenes * .18)));
+    const randomGenes = minGenes + Math.floor(Math.random() * Math.max(1, maxGenes - minGenes + 1));
+    setConfig((current) => ({
+      ...current,
+      template: nextTemplate.id,
+      templateVersion: nextTemplate.version,
+      seed: Math.floor(Math.random() * 0xffffffff) || 1,
+      geneCount: randomGenes,
+      density: Math.round((.65 + Math.random() * .9) * 10) / 10,
+      theme: THEME_OPTIONS[Math.floor(Math.random() * THEME_OPTIONS.length)] ?? "dark-observatory",
+      cameraAzimuth: -70 + Math.random() * 140,
+      cameraElevation: 8 + Math.random() * 42,
+      cameraZoom: .8 + Math.random() * .5,
+    }));
+    showToast(`惊喜构图：${nextTemplate.name}`);
+  };
+  const savePreset = (): void => {
+    const preset: SavedPreset = { id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: `${effectiveTemplate.name} · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`, config: { ...effectiveConfig } };
+    const next = [preset, ...savedPresets].slice(0, 8);
+    if (!persistSavedPresets(next)) { showToast("浏览器无法保存收藏，请检查隐私模式或存储权限"); return; }
+    setSavedPresets(next);
+    showToast("已收藏当前构图预设");
+  };
+  const loadPreset = (preset: SavedPreset): void => {
+    if (!templateRegistry[preset.config.template]?.supports(activeDataset)) { showToast("这个预设不适用于当前数据类型"); return; }
+    setConfig({ ...DEFAULT_ARTWORK_CONFIG, ...preset.config, templateVersion: templateRegistry[preset.config.template].version });
+    showToast(`已载入：${preset.name}`);
+  };
+  const removePreset = (id: string): void => {
+    const next = savedPresets.filter((item) => item.id !== id);
+    if (!persistSavedPresets(next)) { showToast("浏览器无法更新收藏，请检查存储权限"); return; }
+    setSavedPresets(next);
+  };
+  const toggleFullscreen = (): void => {
+    if (document.fullscreenElement) { void document.exitFullscreen(); return; }
+    if (stageRef.current?.requestFullscreen) void stageRef.current.requestFullscreen();
+  };
+  const hitFromClient = (clientX: number, clientY: number): VisualFeature | null => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    return nearestHit(artwork, (clientX - rect.left) * canvas.width / rect.width, (clientY - rect.top) * canvas.height / rect.height)?.feature ?? null;
+  };
+  const handleCanvasKeyDown = (event: React.KeyboardEvent<HTMLCanvasElement>): void => {
+    if (!is3d) return;
+    const key = event.key;
+    const azimuth = effectiveConfig.cameraAzimuth ?? -32;
+    const elevation = effectiveConfig.cameraElevation ?? 24;
+    const zoom = effectiveConfig.cameraZoom ?? 1;
+    if (key === "ArrowLeft" || key === "ArrowRight") {
+      event.preventDefault();
+      updateConfig({ cameraAzimuth: Math.max(-180, Math.min(180, azimuth + (key === "ArrowLeft" ? -6 : 6))) });
+    } else if (key === "ArrowUp" || key === "ArrowDown") {
+      event.preventDefault();
+      updateConfig({ cameraElevation: Math.max(-70, Math.min(70, elevation + (key === "ArrowUp" ? 5 : -5))) });
+    } else if (key === "+" || key === "=") {
+      event.preventDefault();
+      updateConfig({ cameraZoom: Math.min(2.2, zoom * 1.08) });
+    } else if (key === "-" || key === "_") {
+      event.preventDefault();
+      updateConfig({ cameraZoom: Math.max(.5, zoom * .92) });
+    } else if (key === "0") {
+      event.preventDefault();
+      updateConfig({ cameraAzimuth: -32, cameraElevation: 24, cameraZoom: 1 });
+    }
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -305,23 +423,44 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
     effectiveTemplate.renderCanvas(ctx, artwork, effectiveConfig);
   }, [artwork, effectiveConfig, effectiveTemplate]);
 
-  const updateConfig = (patch: Partial<ArtworkConfig>): void => setConfig((current) => ({ ...current, ...patch }));
-  const selectTemplate = (id: TemplateId): void => updateConfig({ template: id, templateVersion: templateRegistry[id].version });
-  const highlightGene = (): void => {
-    const match = activeDataset.features.find((feature) => feature.id.toUpperCase() === geneQuery.trim().toUpperCase());
-    if (!match) { showToast("当前选定基因中没有找到该名称"); return; }
-    updateConfig({ highlightedGene: match.id });
-    setHovered(match);
-  };
-  const clearHighlight = (): void => setConfig((current) => {
-    const { highlightedGene: _unused, ...rest } = current;
-    return rest;
+  useEffect(() => {
+    if (!touring) return;
+    const id = window.setInterval(() => {
+      if (effectiveTemplate.dimension === "3d") {
+        setConfig((current) => ({ ...current, cameraAzimuth: ((current.cameraAzimuth ?? -32) + 12 + 180) % 360 - 180 }));
+      } else if (effectiveTemplate.usesSeed) {
+        setConfig((current) => ({ ...current, seed: Math.floor(Math.random() * 0xffffffff) || 1 }));
+      } else {
+        setConfig((current) => {
+          const index = THEME_OPTIONS.indexOf(current.theme);
+          return { ...current, theme: THEME_OPTIONS[(index + 1) % THEME_OPTIONS.length] ?? "dark-observatory" };
+        });
+      }
+    }, effectiveTemplate.dimension === "3d" ? 900 : 2600);
+    return () => window.clearInterval(id);
+  }, [touring, effectiveTemplate.dimension, effectiveTemplate.usesSeed]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      const target = event.target as HTMLElement | null;
+      if (target && ["INPUT", "SELECT", "TEXTAREA", "BUTTON"].includes(target.tagName)) return;
+      if (event.key.toLowerCase() === "r") { event.preventDefault(); surprise(); }
+      else if (event.key.toLowerCase() === "g") { event.preventDefault(); randomGene(); }
+      else if (event.key.toLowerCase() === "f") { event.preventDefault(); toggleFullscreen(); }
+      else if (event.code === "Space") { event.preventDefault(); setTouring((value) => !value); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   });
-  const showToast = (message: string): void => { setToast(message); window.setTimeout(() => setToast(null), 2500); };
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    if (cameraFrameRef.current !== null) window.cancelAnimationFrame(cameraFrameRef.current);
+  }, []);
 
   const manifest = (): ArtworkManifest => ({
     schemaVersion: "1.0",
-    application: { name: "Omics to Art", version: "1.0.1" },
+    application: { name: "Omics to Art", version: "1.0.2" },
     dataset: { id: activeDataset.id, title: activeDataset.title, source: activeDataset.source, samples: activeDataset.samples.map((sample) => sample.id), unit: activeDataset.summary.unit },
     processing: activeDataset.provenance,
     artwork: effectiveConfig,
@@ -356,21 +495,41 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
   };
 
   return <main className="studio-page">
-    <div className="studio-toolbar"><button className="ghost-button" onClick={onBack}>← 数据来源</button><div><strong>{activeDataset.id}</strong><span>{activeDataset.title}</span></div><div className="toolbar-actions"><button onClick={share}>复制分享链接</button><button className="primary" onClick={() => void exportBundle()}>导出作品包</button></div></div>
+    <div className="studio-toolbar">
+      <button className="ghost-button" onClick={onBack}>← 数据来源</button>
+      <div><strong>{activeDataset.id}</strong><span>{activeDataset.title}</span></div>
+      <div className="toolbar-actions"><button onClick={surprise}>✦ 惊喜我</button><button onClick={share}>复制分享链接</button><button className="primary" onClick={() => void exportBundle()}>导出作品包</button></div>
+    </div>
     <div className="studio-layout">
       <aside className="control-panel left-panel">
-        <Panel title="艺术模板"><div className="template-list">{templates.map((item) => <button key={item.id} disabled={!item.supports(activeDataset)} className={effectiveTemplate.id===item.id?"active":""} onClick={()=>selectTemplate(item.id)}><strong>{item.name}</strong><span>{item.id}</span></button>)}</div></Panel>
+        <Panel title="玩法"><div className="play-grid"><button onClick={surprise}>✦ 随机构图</button><button className={touring?"active":""} onClick={()=>setTouring((value)=>!value)}>{touring?"■ 停止漫游":"▶ 自动漫游"}</button><button onClick={randomGene}>⌁ 随机基因</button><button onClick={savePreset}>☆ 收藏预设</button></div><p className="shortcut-hint">快捷键：R 随机 · G 基因 · F 全屏 · Space 漫游</p></Panel>
+        <Panel title={`艺术模板 · ${availableTemplates.length}`}><div className="template-list">{templates.map((item) => <button key={item.id} disabled={!item.supports(activeDataset)} className={effectiveTemplate.id===item.id?"active":""} onClick={()=>selectTemplate(item.id)}><span className="template-title"><strong>{item.name}</strong>{item.dimension==="3d"&&<em>3D</em>}</span><span>{item.description ?? item.id}</span></button>)}</div></Panel>
         <Panel title="构图参数">
           <Control label={`基因数量 · ${effectiveConfig.geneCount.toLocaleString()}`}><input type="range" min="1" max={Math.max(1, Math.min(5000, activeDataset.features.length))} step={activeDataset.features.length < 100 ? 1 : 100} value={Math.max(1, Math.min(effectiveConfig.geneCount, activeDataset.features.length))} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({geneCount:Number(event.currentTarget.value)})}/></Control>
-          <Control label={`密度 · ${effectiveConfig.density.toFixed(1)}`}><input type="range" min="0.5" max="1.6" step="0.1" value={effectiveConfig.density} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({density:Number(event.currentTarget.value)})}/></Control>
-          <Control label="随机种子"><div className="inline-control"><input type="number" value={effectiveConfig.seed} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({seed:Math.min(0xffffffff,Math.max(1,Math.trunc(Number(event.currentTarget.value)||1)))})}/><button onClick={()=>updateConfig({seed:Math.floor(Math.random()*0xffffffff)||1})}>重新构图</button></div></Control>
-          <Control label="主题"><select value={effectiveConfig.theme} onChange={(event: React.ChangeEvent<HTMLSelectElement>)=>updateConfig({theme:event.currentTarget.value as ArtworkConfig["theme"]})}><option value="dark-observatory">Dark Observatory</option><option value="paper-ink">Paper & Ink</option><option value="fluorescence">Fluorescence</option></select></Control>
+          {effectiveTemplate.usesDensity&&<Control label={`密度 · ${effectiveConfig.density.toFixed(1)}`}><input type="range" min="0.5" max="1.6" step="0.1" value={effectiveConfig.density} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({density:Number(event.currentTarget.value)})}/></Control>}
+          {effectiveTemplate.usesSeed&&<Control label="随机种子"><div className="inline-control"><input type="number" value={effectiveConfig.seed} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({seed:Math.min(0xffffffff,Math.max(1,Math.trunc(Number(event.currentTarget.value)||1)))})}/><button onClick={()=>updateConfig({seed:Math.floor(Math.random()*0xffffffff)||1})}>重新构图</button></div></Control>}
+          <Control label="主题"><select value={effectiveConfig.theme} onChange={(event: React.ChangeEvent<HTMLSelectElement>)=>updateConfig({theme:event.currentTarget.value as ArtworkConfig["theme"]})}><option value="dark-observatory">Dark Observatory</option><option value="paper-ink">Paper & Ink</option><option value="fluorescence">Fluorescence</option><option value="solar-flare">Solar Flare</option><option value="ice-glass">Ice Glass</option><option value="violet-night">Violet Night</option></select></Control>
           <Control label="输出尺寸"><select value={`${effectiveConfig.width}x${effectiveConfig.height}`} onChange={(event: React.ChangeEvent<HTMLSelectElement>)=>{const [width,height]=event.currentTarget.value.split("x").map(Number); if(width&&height)updateConfig({width,height});}}><option value="1080x1080">1080 × 1080</option><option value="1600x900">1600 × 900</option><option value="1920x1080">1920 × 1080</option><option value="2480x3508">A4 · 2480 × 3508</option></select></Control>
-          <label className="check-row"><input type="checkbox" checked={effectiveConfig.showLegend} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({showLegend:event.currentTarget.checked})}/>包含映射图例</label><label className="check-row"><input type="checkbox" checked={effectiveConfig.showLabels} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({showLabels:event.currentTarget.checked})}/>显示高排名基因标签</label>
+          <label className="check-row"><input type="checkbox" checked={effectiveConfig.showLegend} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({showLegend:event.currentTarget.checked})}/>包含映射图例</label>{effectiveTemplate.supportsLabels&&<label className="check-row"><input type="checkbox" checked={effectiveConfig.showLabels} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({showLabels:event.currentTarget.checked})}/>显示高排名基因标签</label>}
         </Panel>
-        <Panel title="基因定位"><div className="gene-search"><input placeholder="TP53" value={geneQuery} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>setGeneQuery(event.currentTarget.value)} onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>)=>{if(event.key==="Enter")highlightGene();}}/><button onClick={highlightGene}>高亮</button></div>{effectiveConfig.highlightedGene&&<button className="text-button" onClick={clearHighlight}>清除 {effectiveConfig.highlightedGene}</button>}</Panel>
+        {is3d&&<Panel title="3D 相机"><Control label={`水平旋转 · ${Math.round(effectiveConfig.cameraAzimuth??-32)}°`}><input type="range" min="-180" max="180" step="1" value={effectiveConfig.cameraAzimuth??-32} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>updateConfig({cameraAzimuth:Number(event.currentTarget.value)})}/></Control><Control label={`俯仰 · ${Math.round(effectiveConfig.cameraElevation??24)}°`}><input type="range" min="-70" max="70" step="1" value={effectiveConfig.cameraElevation??24} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>updateConfig({cameraElevation:Number(event.currentTarget.value)})}/></Control><Control label={`缩放 · ${(effectiveConfig.cameraZoom??1).toFixed(2)}×`}><input type="range" min="0.5" max="2.2" step="0.05" value={effectiveConfig.cameraZoom??1} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>updateConfig({cameraZoom:Number(event.currentTarget.value)})}/></Control><button className="text-button" onClick={()=>updateConfig({cameraAzimuth:-32,cameraElevation:24,cameraZoom:1})}>重置相机</button></Panel>}
+        <Panel title="基因定位"><div className="gene-search"><input aria-label="基因名称或 ID" placeholder="TP53 / gene id" value={geneQuery} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>setGeneQuery(event.currentTarget.value)} onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>)=>{if(event.key==="Enter")highlightGene();}}/><button onClick={highlightGene}>高亮</button></div><div className="gene-actions"><button className="text-button" onClick={randomGene}>随机发现</button>{effectiveConfig.highlightedGene&&<button className="text-button" onClick={clearHighlight}>清除 {effectiveConfig.highlightedGene}</button>}</div></Panel>
+        {savedPresets.length>0&&<Panel title={`我的收藏 · ${savedPresets.length}`}><div className="preset-list">{savedPresets.map((preset)=><div key={preset.id}><button onClick={()=>loadPreset(preset)}><strong>{preset.name}</strong><span>{preset.config.template} · {preset.config.theme}</span></button><button className="preset-delete" title="删除预设" onClick={()=>removePreset(preset.id)}>×</button></div>)}</div></Panel>}
       </aside>
-      <section className="canvas-stage"><canvas ref={canvasRef} role="img" aria-label={`${effectiveTemplate.name}：${activeDataset.title}`} tabIndex={0} onMouseMove={(event: React.MouseEvent<HTMLCanvasElement>)=>{const canvas=canvasRef.current;if(!canvas)return;const rect=canvas.getBoundingClientRect();const hit=nearestHit(artwork,(event.clientX-rect.left)*canvas.width/rect.width,(event.clientY-rect.top)*canvas.height/rect.height);setHovered(hit?.feature??null);}} onMouseLeave={()=>setHovered(null)} />{hovered&&<div className="canvas-tooltip"><strong>{hovered.symbol??hovered.id}</strong><span>mean {hovered.mean.toFixed(3)}</span><span>variance {hovered.variance.toFixed(3)}</span>{hovered.log2FoldChange!==undefined&&<span>log2FC {hovered.log2FoldChange.toFixed(3)}</span>}{hovered.padj!==undefined&&<span>{hovered.significanceKind==="p-value"?"p value":"padj"} {hovered.padj.toExponential(2)}</span>}</div>}</section>
+      <section ref={stageRef} className={`canvas-stage ${is3d?"is-3d":""}`}>
+        <div className="canvas-stage-actions"><span>{is3d?"3D · 拖拽/方向键旋转 · 滚轮或 +/- 缩放":"点击作品中的元素可锁定基因"}</span><button onClick={toggleFullscreen}>⛶ 全屏</button></div>
+        <canvas ref={canvasRef} role="img" aria-label={`${effectiveTemplate.name}：${activeDataset.title}${is3d ? "。可用方向键旋转，+/- 缩放，0 重置相机。" : ""}`} aria-keyshortcuts={is3d ? "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0" : undefined} tabIndex={0}
+          onKeyDown={handleCanvasKeyDown}
+          onPointerDown={(event:React.PointerEvent<HTMLCanvasElement>)=>{if(!is3d)return;event.currentTarget.setPointerCapture(event.pointerId);dragRef.current={x:event.clientX,y:event.clientY,azimuth:effectiveConfig.cameraAzimuth??-32,elevation:effectiveConfig.cameraElevation??24,moved:false};}}
+          onPointerMove={(event:React.PointerEvent<HTMLCanvasElement>)=>{const drag=dragRef.current;if(is3d&&drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;scheduleCameraUpdate(Math.max(-180,Math.min(180,drag.azimuth+dx*.45)),Math.max(-70,Math.min(70,drag.elevation-dy*.35)));return;}setHovered(hitFromClient(event.clientX,event.clientY));}}
+          onPointerUp={(event:React.PointerEvent<HTMLCanvasElement>)=>{const drag=dragRef.current;dragRef.current=null;if(drag?.moved)return;const hit=hitFromClient(event.clientX,event.clientY);if(hit){setHovered(hit);setGeneQuery(hit.symbol??hit.id);updateConfig({highlightedGene:hit.id});showToast(`已锁定：${hit.symbol??hit.id}`);}}}
+          onPointerCancel={()=>{dragRef.current=null;}}
+          onLostPointerCapture={()=>{dragRef.current=null;}}
+          onPointerLeave={()=>{if(!dragRef.current)setHovered(null);}}
+          onWheel={(event:React.WheelEvent<HTMLCanvasElement>)=>{if(!is3d)return;event.preventDefault();const next=Math.max(.5,Math.min(2.2,(effectiveConfig.cameraZoom??1)*(event.deltaY > 0 ? .92 : 1.08)));updateConfig({cameraZoom:next});}}
+        />
+        {hovered&&<div className="canvas-tooltip"><strong>{hovered.symbol??hovered.id}</strong><span>mean {hovered.mean.toFixed(3)}</span><span>variance {hovered.variance.toFixed(3)}</span>{hovered.log2FoldChange!==undefined&&<span>log2FC {hovered.log2FoldChange.toFixed(3)}</span>}{hovered.padj!==undefined&&<span>{hovered.significanceKind==="p-value"?"p value":"padj"} {hovered.padj.toExponential(2)}</span>}<small>点击锁定该基因</small></div>}
+      </section>
       <aside className="control-panel right-panel">
         <Panel title="Data Passport"><Passport dataset={activeDataset} config={effectiveConfig}/></Panel>
         {activeDataset.samples.length>1&&<Panel title={`样本选择 · ${selectedSamples.size}/${dataset.samples.length}`}><div className="sample-list"><button className="text-button" onClick={()=>setSelectedSamples(new Set(dataset.samples.map(s=>s.id)))}>全选</button>{dataset.samples.map((sample)=><label key={sample.id}><input type="checkbox" checked={selectedSamples.has(sample.id)} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>setSelectedSamples(current=>{const next=new Set(current);if(event.currentTarget.checked)next.add(sample.id);else if(next.size>1)next.delete(sample.id);return next;})}/><span>{sample.title}</span></label>)}</div></Panel>}
@@ -381,7 +540,6 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
     </div>{toast&&<div className="toast" role="status" aria-live="polite">{toast}</div>}
   </main>;
 }
-
 function Passport({ dataset, config }: { dataset: VisualDataset; config: ArtworkConfig }): React.JSX.Element {
   const items=[['来源',dataset.source.accession??dataset.source.sourceFile??dataset.source.type],['数据类型',dataset.summary.unit],['源基因数',dataset.summary.originalFeatureCount.toLocaleString()],['有效基因数',dataset.summary.validFeatureCount.toLocaleString()],['艺术基因数',Math.min(config.geneCount,dataset.features.length).toLocaleString()],['样本数',dataset.samples.length.toString()],['缺失率',`${(dataset.summary.missingRate*100).toFixed(2)}%`],['变换',dataset.summary.transform],['模板',`${config.template} ${config.templateVersion}`],['Seed',String(config.seed)]];
   return <dl className="passport">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
@@ -399,6 +557,11 @@ function DocumentPage({kind}:{kind:"methods"|"privacy"|"about"}):React.JSX.Eleme
     privacy:{title:"Privacy · 隐私说明",intro:"本地上传文件只在你的浏览器中处理。",sections:[['本地文件','文件不会发送到 Worker，不写入日志，不保存到 Cloudflare，不用于训练或分析。刷新页面后不会自动恢复原文件。'],['公开 GEO 数据','Worker 仅代理 NCBI 官方公开文件，并使用短时签名令牌、防开放代理白名单和重定向校验。'],['日志','仅记录接口、状态码、响应时间、accession、错误类型和应用版本；不记录表达矩阵、上传内容或 URL hash 参数。'],['缓存','公开 GEO 元数据和文件候选可在边缘缓存；大型矩阵不进入应用持久化存储。']]},
     about:{title:"About · 关于 Omics to Art",intro:"输入一个 GEO 编号，把真实的组学数据变成一幅可以解释、可以复现、可以分享的艺术作品。",sections:[['定位','它比纯科研绘图工具更有趣，比随机艺术生成器更严谨，比完整生信平台更轻量。'],['不是分析平台','它不替代 GEO2R、DESeq2、limma、临床诊断或论文结论验证。'],['开放设计','核心代码采用 MIT License；模板接口、数据结构和映射规则公开，便于贡献新的视觉语言。'],['技术架构','React + TypeScript + Cloudflare Workers Static Assets。Worker 负责 GEO 元数据、文件发现和安全流式代理，浏览器负责解压、解析、统计与渲染。']]}
   }[kind];
+  useEffect(() => {
+    const previous = document.title;
+    document.title = `${content.title} · Omics to Art`;
+    return () => { document.title = previous; };
+  }, [content.title]);
   return <div className="app-shell"><Header onReset={()=>{window.location.href="/"}}/><main className="document-page"><div className="eyebrow">OMICS TO ART DOCUMENTATION</div><h1>{content.title}</h1><p className="lead">{content.intro}</p>{content.sections.map(([title,body])=><section key={title}><h2>{title}</h2><p>{body}</p></section>)}<a className="back-link" href="/">← 返回应用</a></main><Footer/></div>;
 }
 

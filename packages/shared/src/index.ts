@@ -128,7 +128,13 @@ export type TemplateId =
   | "expression-constellation"
   | "transcriptome-weave"
   | "differential-bloom"
-  | "sample-fingerprint";
+  | "sample-fingerprint"
+  | "radial-pulse"
+  | "matrix-mosaic"
+  | "flow-field"
+  | "gene-orbit-3d"
+  | "expression-terrain-3d"
+  | "differential-nebula";
 
 export interface ArtworkConfig {
   template: TemplateId;
@@ -137,10 +143,13 @@ export interface ArtworkConfig {
   width: number;
   height: number;
   geneCount: number;
-  theme: "dark-observatory" | "paper-ink" | "fluorescence";
+  theme: "dark-observatory" | "paper-ink" | "fluorescence" | "solar-flare" | "ice-glass" | "violet-night";
   showLegend: boolean;
   showLabels: boolean;
   density: number;
+  cameraAzimuth?: number;
+  cameraElevation?: number;
+  cameraZoom?: number;
   highlightedGene?: string;
 }
 

@@ -4,6 +4,7 @@ Implement the `ArtTemplate` interface from `@omics-to-art/art-engine`:
 
 - stable `id`, semantic version, and display name
 - `supports(data)` capability check
+- declare optional UI capabilities (`usesSeed`, `usesDensity`, `supportsLabels`) only when the renderer actually consumes those controls
 - deterministic `prepare(data, config)`
 - Canvas renderer
 - SVG renderer using escaped text and stable element IDs

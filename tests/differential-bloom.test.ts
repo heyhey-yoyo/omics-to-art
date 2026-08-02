@@ -4,7 +4,7 @@ import type { ArtworkConfig } from "@omics-to-art/shared";
 import { templateRegistry } from "@omics-to-art/templates";
 
 const source = { type: "local" as const, sourceKind: "local-file" as const, sourceFile: "diff.csv" };
-const config: ArtworkConfig = { template: "differential-bloom", templateVersion: "1.1.0", seed: 7, width: 1000, height: 800, geneCount: 50, theme: "dark-observatory", showLegend: true, showLabels: false, density: 1 };
+const config: ArtworkConfig = { template: "differential-bloom", templateVersion: templateRegistry["differential-bloom"].version, seed: 7, width: 1000, height: 800, geneCount: 50, theme: "dark-observatory", showLegend: true, showLabels: false, density: 1 };
 
 describe("Differential Bloom", () => {
   it("uses hemisphere as a non-color direction encoding", () => {

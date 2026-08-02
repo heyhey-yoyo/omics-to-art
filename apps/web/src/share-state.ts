@@ -20,12 +20,15 @@ export const DEFAULT_ARTWORK_CONFIG: ArtworkConfig = {
   showLegend: true,
   showLabels: false,
   density: 1,
+  cameraAzimuth: -32,
+  cameraElevation: 24,
+  cameraZoom: 1,
 };
 
 const SOURCE_KINDS = new Set<FileCandidate["sourceKind"]>([
   "ncbi-tpm", "ncbi-fpkm", "ncbi-raw-counts", "series-matrix", "supplementary", "local-file", "demo",
 ]);
-const THEMES = new Set<ArtworkConfig["theme"]>(["dark-observatory", "paper-ink", "fluorescence"]);
+const THEMES = new Set<ArtworkConfig["theme"]>(["dark-observatory", "paper-ink", "fluorescence", "solar-flare", "ice-glass", "violet-night"]);
 
 export function encodeShareState(state: SharedArtworkState): string {
   const clean = sanitizeShareState(state);
@@ -79,6 +82,9 @@ export function sanitizeShareState(input: unknown): SharedArtworkState {
     showLegend: typeof configInput.showLegend === "boolean" ? configInput.showLegend : DEFAULT_ARTWORK_CONFIG.showLegend,
     showLabels: typeof configInput.showLabels === "boolean" ? configInput.showLabels : DEFAULT_ARTWORK_CONFIG.showLabels,
     density: clampNumber(configInput.density, 0.25, 2.5, DEFAULT_ARTWORK_CONFIG.density),
+    cameraAzimuth: clampNumber(configInput.cameraAzimuth, -180, 180, DEFAULT_ARTWORK_CONFIG.cameraAzimuth ?? -32),
+    cameraElevation: clampNumber(configInput.cameraElevation, -80, 80, DEFAULT_ARTWORK_CONFIG.cameraElevation ?? 24),
+    cameraZoom: clampNumber(configInput.cameraZoom, 0.5, 2.2, DEFAULT_ARTWORK_CONFIG.cameraZoom ?? 1),
     ...(highlightedGene ? { highlightedGene } : {}),
   };
   const selectedSamples = Array.isArray(record.selectedSamples)

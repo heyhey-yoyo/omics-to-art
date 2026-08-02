@@ -30,6 +30,8 @@ Empty strings, `NA`, `N/A`, `NaN`, `null`, and `.` are missing. A row with more 
 
 A template receives a deterministic seed derived from dataset ID, source file, selected sample IDs, template ID and user seed. Exported manifests record source file, selected samples, transform, filters, template version, theme and seed.
 
+Determinism is guaranteed for a fixed application release and renderer implementation. Share-state sanitization intentionally upgrades `templateVersion` to the renderer bundled with the current application; therefore, a link opened by a later release cannot by itself reproduce an older renderer byte-for-byte. Long-term audit-grade replay should archive the manifest together with the application release or source commit that produced it.
+
 
 ## Differential significance semantics
 
@@ -37,7 +39,7 @@ Adjusted fields (`padj`, `FDR`, `qvalue`, `adj.P.Val`) are preferred. If only a 
 
 Rows with P values outside the legal 0–1 interval are excluded and counted in a visible warning. A supplied zero is retained as an underflow-compatible value and bounded only when applying `-log10`.
 
-Differential Bloom v1.1.0 encodes up-regulation in the right hemisphere and down-regulation in the left hemisphere. Color remains a secondary cue, so direction is still readable in monochrome or by users with color-vision differences.
+Differential Bloom v1.1.1 encodes up-regulation in the right hemisphere and down-regulation in the left hemisphere. Color remains a secondary cue, so direction is still readable in monochrome or by users with color-vision differences.
 
 ## Resource boundaries
 

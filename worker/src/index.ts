@@ -225,9 +225,11 @@ function mapSummary(record: Record<string, unknown>): GeoSeriesSummary | null {
 }
 
 async function eutilsJson(endpoint: string, params: Record<string, string>, env: Env): Promise<Record<string, unknown>> {
-  const search = new URLSearchParams({ ...params, tool: env.NCBI_TOOL || "omics-to-art", email: env.NCBI_EMAIL ?? "" });
-  if (env.NCBI_API_KEY) search.set("api_key", env.NCBI_API_KEY);
-  const response = await fetchWithRetry(`${EUTILS}/${endpoint}?${search.toString()}`, { headers: ncbiHeaders(env) });
+  const body = new URLSearchParams({ ...params, tool: env.NCBI_TOOL || "omics-to-art", email: env.NCBI_EMAIL ?? "" });
+  if (env.NCBI_API_KEY) body.set("api_key", env.NCBI_API_KEY);
+  const headers = new Headers(ncbiHeaders(env));
+  headers.set("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
+  const response = await fetchWithRetry(`${EUTILS}/${endpoint}`, { method: "POST", headers, body: body.toString() });
   if (response.status === 429) throw new HttpError(503, "NCBI_RATE_LIMIT", "NCBI 当前请求繁忙。", true);
   if (!response.ok) throw new HttpError(502, "NCBI_UNAVAILABLE", "暂时无法连接 NCBI。", true);
   const parsed: unknown = await response.json();

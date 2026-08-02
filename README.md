@@ -2,20 +2,23 @@
 
 Turn public omics data into interpretable, reproducible art.
 
-Omics to Art 是一个浏览器优先的开源网页应用，把 NCBI Gene Expression Omnibus（GEO）中的表达矩阵或本地 CSV/TSV 转换成可解释的视觉作品。每种形状、位置、亮度和纹理均映射到明确的数据变量；相同数据、参数、模板版本和随机种子会生成相同作品。
+Omics to Art 是一个浏览器优先的开源网页应用，把 NCBI Gene Expression Omnibus（GEO）中的表达矩阵或本地 CSV/TSV 转换成可解释的视觉作品。每种形状、位置、亮度和纹理均映射到明确的数据变量；在同一应用发布版本中，相同数据、参数、模板版本和随机种子会生成相同作品。跨应用版本的历史精确重放需要同时保留对应发布版本，因为当前包不会内置旧模板渲染器。
 
 ## 已实现
 
 - GSE accession 校验、GEO E-utilities 元数据读取和下载页文件发现
-- NCBI TPM、FPKM、raw counts、microarray Series Matrix 与投稿者文本矩阵候选识别；投稿者文件名无需包含 GSE 编号，但明显的注释、README 和校验文件会被排除；投稿者文件名无需包含 GSE 编号，但明显的注释、README 和校验文件会被排除
+- NCBI TPM、FPKM、raw counts、microarray Series Matrix 与投稿者文本矩阵候选识别；投稿者文件名无需包含 GSE 编号，但明显的注释、README 和校验文件会被排除
 - Cloudflare Worker 短时 HMAC 文件令牌、NCBI 域名白名单、重定向验证、Range 透传、缓存和基础限流
 - 浏览器 Web Worker 流式 gzip 解压、逐行 CSV/TSV 解析、缺失值检查、解压/单行硬限制和候选 top-K 缩减
 - raw counts 的库大小校正与 `log2(CPM + 1)` 视觉变换
 - 本地 CSV / TSV / TXT / gzip；本地文件不上传
-- Expression Constellation、Transcriptome Weave、Differential Bloom、Sample Fingerprint
+- 10 种艺术模板：Expression Constellation、Transcriptome Weave、Differential Bloom、Sample Fingerprint、Radial Pulse、Matrix Mosaic、Flow Field、Gene Orbit 3D、Expression Terrain 3D、Differential Nebula
 - 样本筛选、基因搜索与高亮、主题、seed、输出尺寸和图例
 - PNG、SVG、manifest.json、README.txt 和无依赖 ZIP 作品包
 - GEO 分享链接会恢复源文件、样本选择、模板参数与随机种子；所有链接参数均经过白名单、长度和资源上限校验
+- 交互玩法：随机构图、自动漫游、随机基因发现、点击锁定基因、全屏画布、本地收藏预设，以及 3D 拖拽或方向键旋转、滚轮或 +/- 缩放（0 重置相机）
+- 6 套配色主题；3D 相机角度和缩放也会进入分享状态与 manifest，保持视角可复现
+- 跨版本精确重放说明：分享链接会升级到当前模板实现；如需长期审计级复现，请同时归档 manifest 与对应应用发布包/提交
 - 数据护照、科学免责声明、Methods、Privacy 与 About 页面
 - Vitest 单元测试、Playwright E2E 骨架、GitHub Actions CI
 
@@ -31,7 +34,7 @@ Browser
 ├── Web Worker
 ├── streaming gzip / CSV / TSV parser
 ├── Data Engine
-├── Art Engine + four templates
+├── Art Engine + 10 templates (8 × 2D + 2 × interactive 3D)
 └── PNG / SVG / ZIP exporter
         │
         ▼
@@ -96,7 +99,7 @@ npm run test:e2e
 npm run check
 ```
 
-首次在可联网环境安装后应生成并提交 `package-lock.json`。当前 CI 在锁文件存在时自动使用 `npm ci`；没有锁文件时只提供临时 `npm install` 回退并发出警告。正式发布不得长期依赖该回退。
+首次在可联网环境安装后应生成并提交 `package-lock.json`。CI 会明确要求仓库中存在 `package-lock.json`，随后只使用 `npm ci`；缺少锁文件时 CI 会直接失败，避免在发布流水线里临时解析出不同的依赖树。
 
 ## Cloudflare 部署
 

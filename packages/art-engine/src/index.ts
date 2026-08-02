@@ -43,6 +43,33 @@ export const THEMES: Record<ArtworkConfig["theme"], ThemePalette> = {
     accent3: "#66d9ff",
     panel: "#071511",
   },
+  "solar-flare": {
+    background: "#120807",
+    foreground: "#fff4e6",
+    muted: "#bd8d78",
+    accent: "#ff7a45",
+    accent2: "#ffd166",
+    accent3: "#ff4d8d",
+    panel: "#22100c",
+  },
+  "ice-glass": {
+    background: "#06131b",
+    foreground: "#effcff",
+    muted: "#84aebc",
+    accent: "#77e6ff",
+    accent2: "#b8c7ff",
+    accent3: "#a8ffdf",
+    panel: "#0b202b",
+  },
+  "violet-night": {
+    background: "#0d0718",
+    foreground: "#fbf4ff",
+    muted: "#9d8cac",
+    accent: "#b879ff",
+    accent2: "#ff77c8",
+    accent3: "#78d8ff",
+    panel: "#180d29",
+  },
 };
 
 export interface HitRegion {
@@ -68,6 +95,11 @@ export interface ArtTemplate {
   id: TemplateId;
   name: string;
   version: string;
+  dimension?: "2d" | "3d";
+  description?: string;
+  usesSeed?: boolean;
+  usesDensity?: boolean;
+  supportsLabels?: boolean;
   supports(data: VisualDataset): boolean;
   prepare(data: VisualDataset, config: ArtworkConfig): PreparedArtwork;
   renderCanvas(ctx: CanvasRenderingContext2D, artwork: PreparedArtwork, config: ArtworkConfig): void;

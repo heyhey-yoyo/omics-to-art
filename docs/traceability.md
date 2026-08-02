@@ -11,10 +11,16 @@
 | Local CSV/TSV privacy | File stream enters the browser worker directly; privacy UI in `apps/web/src/App.tsx` |
 | Data Engine / Art Engine separation | `packages/data-engine`, `packages/art-engine`, `packages/templates` |
 | Deterministic random seed | `packages/art-engine/src/index.ts`, template tests |
-| Expression Constellation v1.1.0 | `packages/templates/src/index.ts` |
+| Expression Constellation v1.1.1 | `packages/templates/src/index.ts` |
 | Transcriptome Weave | `packages/templates/src/index.ts` |
-| Differential Bloom | `packages/templates/src/index.ts` (v1.1.0, hemisphere direction encoding) |
+| Differential Bloom | `packages/templates/src/index.ts` (v1.1.1, hemisphere direction encoding) |
 | Sample Fingerprint | `packages/templates/src/index.ts` |
+| Radial Pulse | `packages/templates/src/index.ts` |
+| Matrix Mosaic | `packages/templates/src/index.ts` |
+| Flow Field | `packages/templates/src/index.ts` |
+| Gene Orbit 3D | `packages/templates/src/index.ts` (v1.0.1, stable feature-pair topology across camera views) |
+| Expression Terrain 3D | `packages/templates/src/index.ts` (v1.0.1) |
+| Differential Nebula | `packages/templates/src/index.ts` |
 | Data Passport and legends | Studio and manifest generation in `apps/web/src/App.tsx` |
 | PNG, SVG, manifest and ZIP | `apps/web/src/export.ts`, template SVG renderers |
 | Reproducible GEO share link | Validated state codec in `apps/web/src/share-state.ts`; restoration and UI in `apps/web/src/App.tsx` |

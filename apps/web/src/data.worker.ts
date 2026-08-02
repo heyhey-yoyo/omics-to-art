@@ -149,9 +149,16 @@ interface Candidate {
 }
 
 async function parseMatrixStream(stream: ReadableStream<Uint8Array>, options: StreamOptions): Promise<VisualDataset> {
-  const reader = stream.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "";
   let bytesRead = 0;
+  const countedStream = stream.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
+    transform(chunk, controller) {
+      bytesRead += chunk.byteLength;
+      if (bytesRead > DECOMPRESSED_HARD_LIMIT_BYTES) throw new Error("解压后的矩阵超过 1 GB 安全上限。");
+      controller.enqueue(chunk);
+    },
+  }));
+  const reader = countedStream.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
   let parsedRows = 0;
   let originalRows = 0;
   let validRows = 0;
@@ -287,8 +294,6 @@ async function parseMatrixStream(stream: ReadableStream<Uint8Array>, options: St
     const { done, value } = await reader.read();
     if (done) break;
     if (!value) continue;
-    bytesRead += new TextEncoder().encode(value).byteLength;
-    if (bytesRead > DECOMPRESSED_HARD_LIMIT_BYTES) throw new Error("解压后的矩阵超过 1 GB 安全上限。");
     buffer += value;
     if (buffer.length > MAX_TEXT_LINE_BYTES && !buffer.includes("\n")) throw new Error("检测到超过 16 MB 的单行文本，文件可能不是标准表达矩阵。");
     let newline = buffer.indexOf("\n");

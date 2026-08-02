@@ -8,5 +8,6 @@ coverage/
 .DS_Store
 *.log
 *.tsbuildinfo
-# delivery archives — extracted content lives in the repo
+
+# delivery archives - extracted content lives in the repo
 *.zip
