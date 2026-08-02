@@ -316,15 +316,15 @@ async function parseMatrixStream(stream: ReadableStream<Uint8Array>, options: St
     ? finalizeDifferential(candidates, options.maxFeatures)
     : finalizeExpression(candidates, options.maxFeatures, unit, sampleSums);
   const samples: VisualSample[] = differential
-    ? [{ id: "differential-result", title: "Differential result" }]
+    ? [{ id: "differential-result", title: "差异结果" }]
     : sampleHeaders.map((id) => ({ id: stripQuotes(id), title: stripQuotes(id) }));
   const datasetSignificanceKind = features.find((feature) => feature.significanceKind)?.significanceKind ?? "adjusted-p-value";
   const transformLabel = differential
-    ? "No statistical recomputation; supplied fields mapped directly."
+    ? "不做统计重算，投稿者字段直接映射。"
     : unit === "raw-count"
-      ? "library-size normalization → log2(CPM + 1)"
+      ? "文库大小归一化 → log2(CPM + 1)"
       : unit === "microarray-value" || unit === "unknown"
-        ? "submitted values (no automatic transformation)"
+        ? "投稿者原值（不做自动变换）"
         : `log2(${unit} + 1)`;
   const warnings: string[] = [];
   if (unit === "unknown") warnings.push("无法确认表达单位；为避免破坏已变换或含负值的数据，当前保留投稿者原值。请在解释作品前确认单位和预处理方式。");

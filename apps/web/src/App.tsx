@@ -240,11 +240,11 @@ function Home(props: {
   const fileInput = useRef<HTMLInputElement>(null);
   return <main className="home">
     <section className="hero">
-      <div className="eyebrow">ACADEMIC · PLAYFUL · REPRODUCIBLE</div>
-      <h1>Turn public omics data<br />into interpretable art.</h1>
+      <div className="eyebrow">学术 · 趣味 · 可复现</div>
+      <h1>把公开的组学数据<br />变成可解读的艺术。</h1>
       <p>把真实的组学数据，变成一幅可以解释、复现和分享的作品。10 种视觉模板、6 套主题，并加入可拖拽旋转的 3D 数据雕塑。</p>
       <div className="accession-box">
-        <label htmlFor="gse">Enter a GEO Series accession</label>
+        <label htmlFor="gse">输入 GEO Series 编号</label>
         <div className="input-row"><label htmlFor="gse">GSE</label><input id="gse" value={props.accession.replace(/^GSE/i, "")} onChange={(event: React.ChangeEvent<HTMLInputElement>) => props.setAccession(`GSE${event.currentTarget.value.replace(/\D/g, "")}`)} onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => { if (event.key === "Enter") void props.inspectGeo(); }} inputMode="numeric" placeholder="164073" /><button onClick={() => void props.inspectGeo()}>检查数据</button></div>
       </div>
       {props.error && <ErrorNotice message={props.error} diagnostic={props.diagnostic} />}
@@ -256,13 +256,13 @@ function Home(props: {
       </div>
       <input ref={fileInput} type="file" hidden accept=".csv,.tsv,.txt,.gz" onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file = event.currentTarget.files?.[0]; if (file) props.processLocal(file); }} />
     </section>
-    <aside className="hero-art" aria-hidden="true"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="orbit orbit-c"/><div className="data-caption">GENE EXPRESSION<br/>VISUAL SYSTEM<br/>SEED 184726</div></aside>
+    <aside className="hero-art" aria-hidden="true"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="orbit orbit-c"/><div className="data-caption">基因表达<br/>视觉系统<br/>种子 184726</div></aside>
   </main>;
 }
 
 function FileSelection({ series, files, processCandidate, processLocal, error, diagnostic }: { series: GeoSeriesSummary; files: GeoFilesResponse; processCandidate: (candidate: FileCandidate) => void; processLocal: (file: File) => void; error: string | null; diagnostic: string | null }): React.JSX.Element {
   const input = useRef<HTMLInputElement>(null);
-  return <main className="content-page"><section className="dataset-header"><div><div className="eyebrow">GEO COMPATIBILITY REPORT</div><h1>{series.accession}</h1><h2>{series.title}</h2></div><div className={`grade grade-${files.compatibility.grade.toLowerCase()}`}><span>兼容等级</span><strong>{files.compatibility.grade}</strong></div></section>
+  return <main className="content-page"><section className="dataset-header"><div><div className="eyebrow">GEO 兼容性报告</div><h1>{series.accession}</h1><h2>{series.title}</h2></div><div className={`grade grade-${files.compatibility.grade.toLowerCase()}`}><span>兼容等级</span><strong>{files.compatibility.grade}</strong></div></section>
     <div className="meta-grid"><Meta label="物种" value={series.organisms.join(", ") || "未提供"}/><Meta label="实验类型" value={series.experimentTypes.join(", ") || "未提供"}/><Meta label="样本数" value={String(series.sampleCount)}/><Meta label="平台" value={series.platforms.map((p) => p.accession).join(", ") || "未提供"}/></div>
     {files.compatibility.warnings.length > 0 && <div className="warning-panel">{files.compatibility.warnings.map((warning) => <p key={warning}>△ {warning}</p>)}</div>}
     {error && <ErrorNotice message={error} diagnostic={diagnostic} />}
@@ -275,7 +275,7 @@ function FileSelection({ series, files, processCandidate, processLocal, error, d
 }
 
 function Processing({ progress, onCancel }: { progress: { message: string; rows: number; bytes: number }; onCancel: () => void }): React.JSX.Element {
-  return <main className="center-page" aria-live="polite"><div className="processing-card"><div className="spinner"/><div className="eyebrow">BROWSER DATA ENGINE</div><h1>{progress.message}</h1><p>矩阵正在浏览器 Web Worker 中流式解压、解析和缩减。服务端不会执行组学计算。</p><div className="progress-track"><div className="progress-indeterminate"/></div><div className="progress-stats"><span>{(progress.bytes/1024/1024).toFixed(1)} MB 已读取</span><span>{progress.rows.toLocaleString()} 行已解析</span></div><button className="ghost-button" onClick={onCancel}>取消处理</button></div></main>;
+  return <main className="center-page" aria-live="polite"><div className="processing-card"><div className="spinner"/><div className="eyebrow">浏览器数据引擎</div><h1>{progress.message}</h1><p>矩阵正在浏览器 Web Worker 中流式解压、解析和缩减。服务端不会执行组学计算。</p><div className="progress-track"><div className="progress-indeterminate"/></div><div className="progress-stats"><span>{(progress.bytes/1024/1024).toFixed(1)} MB 已读取</span><span>{progress.rows.toLocaleString()} 行已解析</span></div><button className="ghost-button" onClick={onCancel}>取消处理</button></div></main>;
 }
 
 function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => void }): React.JSX.Element {
@@ -508,12 +508,12 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
           <Control label={`基因数量 · ${effectiveConfig.geneCount.toLocaleString()}`}><input type="range" min="1" max={Math.max(1, Math.min(5000, activeDataset.features.length))} step={activeDataset.features.length < 100 ? 1 : 100} value={Math.max(1, Math.min(effectiveConfig.geneCount, activeDataset.features.length))} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({geneCount:Number(event.currentTarget.value)})}/></Control>
           {effectiveTemplate.usesDensity&&<Control label={`密度 · ${effectiveConfig.density.toFixed(1)}`}><input type="range" min="0.5" max="1.6" step="0.1" value={effectiveConfig.density} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({density:Number(event.currentTarget.value)})}/></Control>}
           {effectiveTemplate.usesSeed&&<Control label="随机种子"><div className="inline-control"><input type="number" value={effectiveConfig.seed} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({seed:Math.min(0xffffffff,Math.max(1,Math.trunc(Number(event.currentTarget.value)||1)))})}/><button onClick={()=>updateConfig({seed:Math.floor(Math.random()*0xffffffff)||1})}>重新构图</button></div></Control>}
-          <Control label="主题"><select value={effectiveConfig.theme} onChange={(event: React.ChangeEvent<HTMLSelectElement>)=>updateConfig({theme:event.currentTarget.value as ArtworkConfig["theme"]})}><option value="dark-observatory">Dark Observatory</option><option value="paper-ink">Paper & Ink</option><option value="fluorescence">Fluorescence</option><option value="solar-flare">Solar Flare</option><option value="ice-glass">Ice Glass</option><option value="violet-night">Violet Night</option></select></Control>
+          <Control label="主题"><select value={effectiveConfig.theme} onChange={(event: React.ChangeEvent<HTMLSelectElement>)=>updateConfig({theme:event.currentTarget.value as ArtworkConfig["theme"]})}><option value="dark-observatory">暗夜天文台</option><option value="paper-ink">纸墨</option><option value="fluorescence">荧光</option><option value="solar-flare">日耀</option><option value="ice-glass">冰晶玻璃</option><option value="violet-night">紫夜</option></select></Control>
           <Control label="输出尺寸"><select value={`${effectiveConfig.width}x${effectiveConfig.height}`} onChange={(event: React.ChangeEvent<HTMLSelectElement>)=>{const [width,height]=event.currentTarget.value.split("x").map(Number); if(width&&height)updateConfig({width,height});}}><option value="1080x1080">1080 × 1080</option><option value="1600x900">1600 × 900</option><option value="1920x1080">1920 × 1080</option><option value="2480x3508">A4 · 2480 × 3508</option></select></Control>
           <label className="check-row"><input type="checkbox" checked={effectiveConfig.showLegend} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({showLegend:event.currentTarget.checked})}/>包含映射图例</label>{effectiveTemplate.supportsLabels&&<label className="check-row"><input type="checkbox" checked={effectiveConfig.showLabels} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({showLabels:event.currentTarget.checked})}/>显示高排名基因标签</label>}
         </Panel>
         {is3d&&<Panel title="3D 相机"><Control label={`水平旋转 · ${Math.round(effectiveConfig.cameraAzimuth??-32)}°`}><input type="range" min="-180" max="180" step="1" value={effectiveConfig.cameraAzimuth??-32} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>updateConfig({cameraAzimuth:Number(event.currentTarget.value)})}/></Control><Control label={`俯仰 · ${Math.round(effectiveConfig.cameraElevation??24)}°`}><input type="range" min="-70" max="70" step="1" value={effectiveConfig.cameraElevation??24} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>updateConfig({cameraElevation:Number(event.currentTarget.value)})}/></Control><Control label={`缩放 · ${(effectiveConfig.cameraZoom??1).toFixed(2)}×`}><input type="range" min="0.5" max="2.2" step="0.05" value={effectiveConfig.cameraZoom??1} onChange={(event:React.ChangeEvent<HTMLInputElement>)=>updateConfig({cameraZoom:Number(event.currentTarget.value)})}/></Control><button className="text-button" onClick={()=>updateConfig({cameraAzimuth:-32,cameraElevation:24,cameraZoom:1})}>重置相机</button></Panel>}
-        <Panel title="基因定位"><div className="gene-search"><input aria-label="基因名称或 ID" placeholder="TP53 / gene id" value={geneQuery} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>setGeneQuery(event.currentTarget.value)} onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>)=>{if(event.key==="Enter")highlightGene();}}/><button onClick={highlightGene}>高亮</button></div><div className="gene-actions"><button className="text-button" onClick={randomGene}>随机发现</button>{effectiveConfig.highlightedGene&&<button className="text-button" onClick={clearHighlight}>清除 {effectiveConfig.highlightedGene}</button>}</div></Panel>
+        <Panel title="基因定位"><div className="gene-search"><input aria-label="基因名称或 ID" placeholder="TP53 / 基因名" value={geneQuery} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>setGeneQuery(event.currentTarget.value)} onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>)=>{if(event.key==="Enter")highlightGene();}}/><button onClick={highlightGene}>高亮</button></div><div className="gene-actions"><button className="text-button" onClick={randomGene}>随机发现</button>{effectiveConfig.highlightedGene&&<button className="text-button" onClick={clearHighlight}>清除 {effectiveConfig.highlightedGene}</button>}</div></Panel>
         {savedPresets.length>0&&<Panel title={`我的收藏 · ${savedPresets.length}`}><div className="preset-list">{savedPresets.map((preset)=><div key={preset.id}><button onClick={()=>loadPreset(preset)}><strong>{preset.name}</strong><span>{preset.config.template} · {preset.config.theme}</span></button><button className="preset-delete" title="删除预设" onClick={()=>removePreset(preset.id)}>×</button></div>)}</div></Panel>}
       </aside>
       <section ref={stageRef} className={`canvas-stage ${is3d?"is-3d":""}`}>
@@ -531,38 +531,39 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
         {hovered&&<div className="canvas-tooltip"><strong>{hovered.symbol??hovered.id}</strong><span>mean {hovered.mean.toFixed(3)}</span><span>variance {hovered.variance.toFixed(3)}</span>{hovered.log2FoldChange!==undefined&&<span>log2FC {hovered.log2FoldChange.toFixed(3)}</span>}{hovered.padj!==undefined&&<span>{hovered.significanceKind==="p-value"?"p value":"padj"} {hovered.padj.toExponential(2)}</span>}<small>点击锁定该基因</small></div>}
       </section>
       <aside className="control-panel right-panel">
-        <Panel title="Data Passport"><Passport dataset={activeDataset} config={effectiveConfig}/></Panel>
+        <Panel title="数据护照"><Passport dataset={activeDataset} config={effectiveConfig}/></Panel>
         {activeDataset.samples.length>1&&<Panel title={`样本选择 · ${selectedSamples.size}/${dataset.samples.length}`}><div className="sample-list"><button className="text-button" onClick={()=>setSelectedSamples(new Set(dataset.samples.map(s=>s.id)))}>全选</button>{dataset.samples.map((sample)=><label key={sample.id}><input type="checkbox" checked={selectedSamples.has(sample.id)} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>setSelectedSamples(current=>{const next=new Set(current);if(event.currentTarget.checked)next.add(sample.id);else if(next.size>1)next.delete(sample.id);return next;})}/><span>{sample.title}</span></label>)}</div></Panel>}
         <Panel title="映射图例"><div className="legend-list">{artwork.legend.map((item)=><div key={item.technical}><strong>{item.label}</strong><code>{item.technical}</code></div>)}</div></Panel>
-        <Panel title="导出"><div className="export-grid"><button onClick={()=>void exportPng()}>PNG</button><button onClick={exportSvg}>SVG</button><button onClick={exportManifest}>Manifest</button><button onClick={()=>void exportBundle()}>ZIP 全套</button></div></Panel>
+        <Panel title="导出"><div className="export-grid"><button onClick={()=>void exportPng()}>PNG</button><button onClick={exportSvg}>SVG</button><button onClick={exportManifest}>清单</button><button onClick={()=>void exportBundle()}>ZIP 全套</button></div></Panel>
         <div className="disclaimer">{SCIENTIFIC_DISCLAIMER}</div>
       </aside>
     </div>{toast&&<div className="toast" role="status" aria-live="polite">{toast}</div>}
   </main>;
 }
 function Passport({ dataset, config }: { dataset: VisualDataset; config: ArtworkConfig }): React.JSX.Element {
-  const items=[['来源',dataset.source.accession??dataset.source.sourceFile??dataset.source.type],['数据类型',dataset.summary.unit],['源基因数',dataset.summary.originalFeatureCount.toLocaleString()],['有效基因数',dataset.summary.validFeatureCount.toLocaleString()],['艺术基因数',Math.min(config.geneCount,dataset.features.length).toLocaleString()],['样本数',dataset.samples.length.toString()],['缺失率',`${(dataset.summary.missingRate*100).toFixed(2)}%`],['变换',dataset.summary.transform],['模板',`${config.template} ${config.templateVersion}`],['Seed',String(config.seed)]];
+  const UNIT_LABELS: Record<string, string> = { "differential-result": "差异结果", "expression-matrix": "表达矩阵", "raw-count": "原始计数", "microarray-value": "芯片信号值", unknown: "未知单位" };
+  const items=[['来源',dataset.source.accession??dataset.source.sourceFile??dataset.source.type],['数据类型',UNIT_LABELS[dataset.summary.unit] ?? dataset.summary.unit],['源基因数',dataset.summary.originalFeatureCount.toLocaleString()],['有效基因数',dataset.summary.validFeatureCount.toLocaleString()],['艺术基因数',Math.min(config.geneCount,dataset.features.length).toLocaleString()],['样本数',dataset.samples.length.toString()],['缺失率',`${(dataset.summary.missingRate*100).toFixed(2)}%`],['变换',dataset.summary.transform],['模板',`${config.template} ${config.templateVersion}`],['随机种子',String(config.seed)]];
   return <dl className="passport">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
 }
 function Panel({title,children}:{title:string;children:React.ReactNode}):React.JSX.Element{return <section className="panel"><h3>{title}</h3>{children}</section>}
 function Control({label,children}:{label:string;children:React.ReactNode}):React.JSX.Element{return <label className="control"><span>{label}</span>{children}</label>}
 function Meta({label,value}:{label:string;value:string}):React.JSX.Element{return <div className="meta-card"><span>{label}</span><strong>{value}</strong></div>}
 function ErrorNotice({message,diagnostic}:{message:string;diagnostic:string|null}):React.JSX.Element{return <div className="error-notice" role="alert"><strong>{message}</strong>{diagnostic&&<button onClick={()=>void copyText(diagnostic).catch(()=>undefined)}>复制诊断信息</button>}</div>}
-function LoadingPanel({title,lines}:{title:string;lines:string[]}):React.JSX.Element{return <main className="center-page" aria-live="polite"><div className="processing-card"><div className="spinner"/><div className="eyebrow">COMPATIBILITY SCAN</div><h1>{title}</h1><ol>{lines.map((line)=><li key={line}>{line}</li>)}</ol></div></main>}
-function Footer():React.JSX.Element{return <footer><span>Omics to Art · Open source · Privacy first</span><span>Data source: NCBI Gene Expression Omnibus</span></footer>}
+function LoadingPanel({title,lines}:{title:string;lines:string[]}):React.JSX.Element{return <main className="center-page" aria-live="polite"><div className="processing-card"><div className="spinner"/><div className="eyebrow">兼容性扫描</div><h1>{title}</h1><ol>{lines.map((line)=><li key={line}>{line}</li>)}</ol></div></main>}
+function Footer():React.JSX.Element{return <footer><span>Omics to Art · 开源 · 隐私优先</span><span>数据来源：NCBI Gene Expression Omnibus</span></footer>}
 
 function DocumentPage({kind}:{kind:"methods"|"privacy"|"about"}):React.JSX.Element{
   const content={
-    methods:{title:"Methods · 数据与视觉方法",intro:"系统将数据处理和艺术表现严格分层。模板只读取缩减后的 VisualDataset，不直接解释 GEO 原始文本。",sections:[['数据入口','正式支持人类 NCBI-generated TPM / FPKM / raw counts、microarray Series Matrix，以及本地 CSV / TSV / gzip。FASTQ、BAM、H5AD、10x 和服务端差异分析不在首版范围。'],['表达变换','TPM / FPKM 默认使用 log2(value + 1)。raw counts 先按样本库大小转换为 CPM，再使用 log2(CPM + 1)。microarray 默认保留投稿者提供值，不擅自执行复杂归一化。'],['流式选择','浏览器 Web Worker 逐行解压和解析，不构建完整对象矩阵。候选池基于表达、方差和完整率，再对候选特征计算百分位排名，默认最多用于艺术引擎 5,000 个基因。'],['可复现性','数据集、样本选择、模板版本、参数和随机种子共同决定构图。导出的 manifest.json 记录全部必要信息。'],['科学边界',SCIENTIFIC_DISCLAIMER]]},
-    privacy:{title:"Privacy · 隐私说明",intro:"本地上传文件只在你的浏览器中处理。",sections:[['本地文件','文件不会发送到 Worker，不写入日志，不保存到 Cloudflare，不用于训练或分析。刷新页面后不会自动恢复原文件。'],['公开 GEO 数据','Worker 仅代理 NCBI 官方公开文件，并使用短时签名令牌、防开放代理白名单和重定向校验。'],['日志','仅记录接口、状态码、响应时间、accession、错误类型和应用版本；不记录表达矩阵、上传内容或 URL hash 参数。'],['缓存','公开 GEO 元数据和文件候选可在边缘缓存；大型矩阵不进入应用持久化存储。']]},
-    about:{title:"About · 关于 Omics to Art",intro:"输入一个 GEO 编号，把真实的组学数据变成一幅可以解释、可以复现、可以分享的艺术作品。",sections:[['定位','它比纯科研绘图工具更有趣，比随机艺术生成器更严谨，比完整生信平台更轻量。'],['不是分析平台','它不替代 GEO2R、DESeq2、limma、临床诊断或论文结论验证。'],['开放设计','核心代码采用 MIT License；模板接口、数据结构和映射规则公开，便于贡献新的视觉语言。'],['技术架构','React + TypeScript + Cloudflare Workers Static Assets。Worker 负责 GEO 元数据、文件发现和安全流式代理，浏览器负责解压、解析、统计与渲染。']]}
+    methods:{title:"数据与视觉方法",intro:"系统将数据处理和艺术表现严格分层。模板只读取缩减后的 VisualDataset，不直接解释 GEO 原始文本。",sections:[['数据入口','正式支持人类 NCBI-generated TPM / FPKM / raw counts、microarray Series Matrix，以及本地 CSV / TSV / gzip。FASTQ、BAM、H5AD、10x 和服务端差异分析不在首版范围。'],['表达变换','TPM / FPKM 默认使用 log2(value + 1)。raw counts 先按样本库大小转换为 CPM，再使用 log2(CPM + 1)。microarray 默认保留投稿者提供值，不擅自执行复杂归一化。'],['流式选择','浏览器 Web Worker 逐行解压和解析，不构建完整对象矩阵。候选池基于表达、方差和完整率，再对候选特征计算百分位排名，默认最多用于艺术引擎 5,000 个基因。'],['可复现性','数据集、样本选择、模板版本、参数和随机种子共同决定构图。导出的 manifest.json 记录全部必要信息。'],['科学边界',SCIENTIFIC_DISCLAIMER]]},
+    privacy:{title:"隐私说明",intro:"本地上传文件只在你的浏览器中处理。",sections:[['本地文件','文件不会发送到 Worker，不写入日志，不保存到 Cloudflare，不用于训练或分析。刷新页面后不会自动恢复原文件。'],['公开 GEO 数据','Worker 仅代理 NCBI 官方公开文件，并使用短时签名令牌、防开放代理白名单和重定向校验。'],['日志','仅记录接口、状态码、响应时间、accession、错误类型和应用版本；不记录表达矩阵、上传内容或 URL hash 参数。'],['缓存','公开 GEO 元数据和文件候选可在边缘缓存；大型矩阵不进入应用持久化存储。']]},
+    about:{title:"关于 Omics to Art",intro:"输入一个 GEO 编号，把真实的组学数据变成一幅可以解释、可以复现、可以分享的艺术作品。",sections:[['定位','它比纯科研绘图工具更有趣，比随机艺术生成器更严谨，比完整生信平台更轻量。'],['不是分析平台','它不替代 GEO2R、DESeq2、limma、临床诊断或论文结论验证。'],['开放设计','核心代码采用 MIT License；模板接口、数据结构和映射规则公开，便于贡献新的视觉语言。'],['技术架构','React + TypeScript + Cloudflare Workers Static Assets。Worker 负责 GEO 元数据、文件发现和安全流式代理，浏览器负责解压、解析、统计与渲染。']]}
   }[kind];
   useEffect(() => {
     const previous = document.title;
     document.title = `${content.title} · Omics to Art`;
     return () => { document.title = previous; };
   }, [content.title]);
-  return <div className="app-shell"><Header onReset={()=>{window.location.href="/"}}/><main className="document-page"><div className="eyebrow">OMICS TO ART DOCUMENTATION</div><h1>{content.title}</h1><p className="lead">{content.intro}</p>{content.sections.map(([title,body])=><section key={title}><h2>{title}</h2><p>{body}</p></section>)}<a className="back-link" href="/">← 返回应用</a></main><Footer/></div>;
+  return <div className="app-shell"><Header onReset={()=>{window.location.href="/"}}/><main className="document-page"><div className="eyebrow">OMICS TO ART 文档</div><h1>{content.title}</h1><p className="lead">{content.intro}</p>{content.sections.map(([title,body])=><section key={title}><h2>{title}</h2><p>{body}</p></section>)}<a className="back-link" href="/">← 返回应用</a></main><Footer/></div>;
 }
 
 function filterDatasetSamples(dataset:VisualDataset, selected:Set<string>):VisualDataset{

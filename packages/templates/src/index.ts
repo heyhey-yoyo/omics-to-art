@@ -29,7 +29,7 @@ interface ConstellationGeometry { stars: Star[]; links: Array<[number, number]> 
 
 const constellation: ArtTemplate = {
   id: "expression-constellation",
-  name: "Expression Constellation",
+  name: "表达星图",
   version: "1.1.1",
   dimension: "2d",
   description: "星体大小、光晕与稳定性共同形成表达星图。",
@@ -120,7 +120,7 @@ interface WeaveGeometry {
 }
 const weave: ArtTemplate = {
   id: "transcriptome-weave",
-  name: "Transcriptome Weave",
+  name: "转录织锦",
   version: "1.0.1",
   dimension: "2d",
   description: "多样本表达谱交织成连续的数据丝线。",
@@ -211,7 +211,7 @@ interface Petal { angle:number; length:number; width:number; opacity:number; col
 interface BloomGeometry { petals:Petal[]; cx:number; cy:number; core:number }
 const bloom: ArtTemplate = {
   id: "differential-bloom",
-  name: "Differential Bloom",
+  name: "差异绽放",
   version: "1.1.1",
   dimension: "2d",
   description: "上调与下调在花朵两侧展开，显著性控制透明度。",
@@ -277,7 +277,7 @@ const bloom: ArtTemplate = {
 
 interface FingerprintGeometry { rings:Array<{radius:number;segments:Array<{start:number;end:number;width:number;opacity:number;color:string;feature:VisualFeature}>}>; cx:number; cy:number }
 const fingerprint: ArtTemplate = {
-  id:"sample-fingerprint", name:"Sample Fingerprint", version:"1.0.1", dimension:"2d",
+  id:"sample-fingerprint", name: "样本指纹", version:"1.0.1", dimension:"2d",
   description:"用同心纹理生成独一无二的样本数据指纹。",
   supports:(data)=>data.summary.unit!=="differential-result",
   prepare(data,config){
@@ -294,7 +294,7 @@ interface PulseRay { angle:number; inner:number; outer:number; width:number; opa
 interface PulseGeometry { rays:PulseRay[]; cx:number; cy:number; rings:number[] }
 const radialPulse: ArtTemplate = {
   id: "radial-pulse",
-  name: "Radial Pulse",
+  name: "径向脉冲",
   version: "1.0.0",
   dimension: "2d",
   description: "把表达量变成放射脉冲，像一张数据唱片。",
@@ -352,7 +352,7 @@ interface MosaicTile { x:number; y:number; size:number; opacity:number; color:st
 interface MosaicGeometry { tiles:MosaicTile[] }
 const matrixMosaic: ArtTemplate = {
   id: "matrix-mosaic",
-  name: "Matrix Mosaic",
+  name: "矩阵马赛克",
   version: "1.0.1",
   dimension: "2d",
   description: "把基因压缩成一面可探索的数据马赛克。",
@@ -379,7 +379,7 @@ interface FlowRibbon { start:[number,number]; cp1:[number,number]; cp2:[number,n
 interface FlowGeometry { ribbons:FlowRibbon[] }
 const flowField: ArtTemplate = {
   id: "flow-field",
-  name: "Flow Field",
+  name: "流场",
   version: "1.0.0",
   dimension: "2d",
   description: "将组学特征变成流体般的丝带与方向场。",
@@ -401,7 +401,7 @@ interface OrbitPoint extends Projected3D { radius:number; opacity:number; color:
 interface OrbitGeometry { points:OrbitPoint[]; links:Array<[number,number]>; sphereRadius:number; cx:number; cy:number }
 const geneOrbit3d: ArtTemplate = {
   id: "gene-orbit-3d",
-  name: "Gene Orbit 3D",
+  name: "基因轨道 3D",
   version: "1.0.1",
   dimension: "3d",
   description: "可拖拽旋转的基因星球；表达越高，轨道越外。",
@@ -422,7 +422,7 @@ interface TerrainPoint extends Projected3D { feature:VisualFeature; color:string
 interface TerrainGeometry { points:TerrainPoint[]; rows:number; cols:number }
 const expressionTerrain3d: ArtTemplate = {
   id: "expression-terrain-3d",
-  name: "Expression Terrain 3D",
+  name: "表达地形 3D",
   version: "1.0.1",
   dimension: "3d",
   description: "把表达谱抬升成一片可旋转的数据山脉。",
@@ -435,7 +435,7 @@ const expressionTerrain3d: ArtTemplate = {
 interface NebulaPoint { x:number;y:number;radius:number;opacity:number;color:string;feature:VisualFeature }
 interface NebulaGeometry { points:NebulaPoint[]; axisX:number; baseY:number }
 const differentialNebula: ArtTemplate = {
-  id:"differential-nebula",name:"Differential Nebula",version:"1.0.1",dimension:"2d",description:"把差异结果铺成左右分裂的显著性星云。",usesSeed:true,usesDensity:true,supports:(data)=>data.summary.unit==="differential-result",
+  id:"differential-nebula",name: "差异星云",version:"1.0.1",dimension:"2d",description:"把差异结果铺成左右分裂的显著性星云。",usesSeed:true,usesDensity:true,supports:(data)=>data.summary.unit==="differential-result",
   prepare(data,config){const features=data.features.slice(0,Math.min(config.geneCount,2400));const maxFc=Math.max(1,...features.map(f=>Math.abs(f.log2FoldChange??0))),maxSig=Math.max(1,...features.map(f=>-Math.log10(Math.max(1e-300,f.padj??1))));const left=76,right=config.width-76,top=115,bottom=config.height-100,axisX=(left+right)/2;const rng=new SeededRandom(stableSeed(data.id,config.template,config.seed));const points=features.map(f=>{const fc=f.log2FoldChange??0,sig=-Math.log10(Math.max(1e-300,f.padj??1));const x=axisX+(fc/maxFc)*(right-left)*.43+rng.range(-3,3)*config.density,y=bottom-(sig/maxSig)*(bottom-top),radius=1.6+Math.log2((f.baseMean??0)+1)/Math.max(1,Math.log2(Math.max(...features.map(v=>(v.baseMean??0)+1))))*7;return{x,y,radius,opacity:.22+clamp(sig/Math.max(1,maxSig))*.75,color:fc>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent,feature:f};});return buildArtwork(data,config,{points,axisX,baseY:bottom},points.filter((_,i)=>i%Math.max(1,Math.floor(points.length/450))===0).map(p=>({x:p.x,y:p.y,radius:Math.max(7,p.radius),feature:p.feature})),[{label:"左右位置 = log2 fold change",technical:"x = signed log2FoldChange"},{label:"高度 = 显著性",technical:"y = -log10(padj or pvalue)"},{label:"星体大小 = base mean",technical:"radius = log2(baseMean + 1)"}]);},
   renderCanvas(ctx,artwork,config){beginCanvas(ctx,artwork);const g=artwork.geometry as NebulaGeometry;ctx.save();ctx.strokeStyle=hexToRgba(artwork.palette.muted,.15);ctx.setLineDash([5,7]);ctx.beginPath();ctx.moveTo(g.axisX,108);ctx.lineTo(g.axisX,g.baseY);ctx.stroke();ctx.setLineDash([]);for(const p of g.points){const hi=config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase();const halo=p.radius*(2.8+p.feature.varianceRank*2);const grad=ctx.createRadialGradient(p.x,p.y,p.radius,p.x,p.y,halo);grad.addColorStop(0,hexToRgba(p.color,hi ? .35 : .16));grad.addColorStop(1,hexToRgba(p.color,0));ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p.x,p.y,halo,0,Math.PI*2);ctx.fill();ctx.fillStyle=hexToRgba(p.color,hi?1:p.opacity);ctx.beginPath();ctx.arc(p.x,p.y,hi?p.radius*1.8:p.radius,0,Math.PI*2);ctx.fill();}ctx.restore();drawFrame(ctx,artwork,config,"template differential nebula v1.0.1 · supplied statistics");},
   renderSvg(artwork,config){const g=artwork.geometry as NebulaGeometry;const pts=g.points.map(p=>{const hi=config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase(),halo=p.radius*(2.8+p.feature.varianceRank*2),radius=hi?p.radius*1.8:p.radius;return `<g id="gene-${safeId(p.feature.id)}" data-gene="${escapeXml(p.feature.id)}"><circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${halo.toFixed(2)}" fill="${p.color}" fill-opacity="${hi ? .18 : .08}"/><circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${p.color}" fill-opacity="${hi?1:p.opacity.toFixed(3)}"/></g>`;}).join("");return wrapSvg(artwork,svgFrame(artwork,config,"template differential nebula v1.0.1 · supplied statistics")+`<line x1="${g.axisX}" y1="108" x2="${g.axisX}" y2="${g.baseY}" stroke="${artwork.palette.muted}" stroke-opacity=".15" stroke-dasharray="5 7"/>`+pts);}

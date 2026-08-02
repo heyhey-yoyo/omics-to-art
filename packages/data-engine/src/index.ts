@@ -307,11 +307,11 @@ function differentialToDataset(table: ParsedTable, options: ParseOptions): Visua
       sampleCount: 1,
       missingRate: 0,
       unit: "differential-result",
-      transform: "No statistical recomputation; supplied fields are mapped directly.",
+      transform: "不做统计重算，投稿者字段直接映射。",
       ranking: significanceLabel,
     },
     provenance: {
-      transform: "User-supplied differential statistics",
+      transform: "投稿者提供的差异统计",
       filtering: { maximumFeatures: options.maxFeatures ?? 3000, significanceField: table.header[significanceIndex] ?? significanceLabel },
       missingValuePolicy: "Rows missing gene, log2FoldChange or p-value fields are excluded.",
       selectedFeatures: selected.length,
