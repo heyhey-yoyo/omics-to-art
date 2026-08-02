@@ -240,7 +240,6 @@ function Home(props: {
   const fileInput = useRef<HTMLInputElement>(null);
   return <main className="home">
     <section className="hero">
-      <div className="eyebrow">学术 · 趣味 · 可复现</div>
       <h1>把公开的组学数据<br />变成可解读的艺术。</h1>
       <p>把真实的组学数据，变成一幅可以解释、复现和分享的作品。10 种视觉模板、6 套主题，并加入可拖拽旋转的 3D 数据雕塑。</p>
       <div className="accession-box">
@@ -249,14 +248,14 @@ function Home(props: {
       </div>
       {props.error && <ErrorNotice message={props.error} diagnostic={props.diagnostic} />}
       <div className="entry-grid">
-        <button className="entry-card" onClick={props.useDemo}><span>01</span><strong>表达矩阵示例</strong><p>体验星图、流场、马赛克，以及可旋转的 3D 基因轨道与表达地形。</p></button>
-        <button className="entry-card" onClick={props.useDifferentialDemo}><span>02</span><strong>差异花园示例</strong><p>使用已提供的 log2FC 与 padj 生成 Differential Bloom、差异星云和 3D 数据雕塑。</p></button>
-        <button className="entry-card" onClick={() => fileInput.current?.click()}><span>03</span><strong>本地上传</strong><p>CSV / TSV / gzip 只在浏览器中处理，不会上传。</p></button>
-        <a className="entry-card" href="/methods"><span>04</span><strong>查看方法</strong><p>了解表达变换、特征选择和视觉映射规则。</p></a>
+        <button className="entry-card" onClick={props.useDemo}><strong>表达矩阵示例</strong><p>体验星图、流场、马赛克，以及可旋转的 3D 基因轨道与表达地形。</p></button>
+        <button className="entry-card" onClick={props.useDifferentialDemo}><strong>差异花园示例</strong><p>使用已提供的 log2FC 与 padj 生成 Differential Bloom、差异星云和 3D 数据雕塑。</p></button>
+        <button className="entry-card" onClick={() => fileInput.current?.click()}><strong>本地上传</strong><p>CSV / TSV / gzip 只在浏览器中处理，不会上传。</p></button>
+        <a className="entry-card" href="/methods"><strong>查看方法</strong><p>了解表达变换、特征选择和视觉映射规则。</p></a>
       </div>
       <input ref={fileInput} type="file" hidden accept=".csv,.tsv,.txt,.gz" onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file = event.currentTarget.files?.[0]; if (file) props.processLocal(file); }} />
     </section>
-    <aside className="hero-art" aria-hidden="true"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="orbit orbit-c"/><div className="data-caption">基因表达<br/>视觉系统<br/>种子 184726</div></aside>
+    <aside className="hero-art" aria-hidden="true"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="orbit orbit-c"/></aside>
   </main>;
 }
 
@@ -496,7 +495,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
 
   return <main className="studio-page">
     <div className="studio-toolbar">
-      <button className="ghost-button" onClick={onBack}>← 数据来源</button>
+      <button className="ghost-button" onClick={onBack}>← 返回首页</button>
       <div><strong>{activeDataset.id}</strong><span>{activeDataset.title}</span></div>
       <div className="toolbar-actions"><button onClick={surprise}>✦ 惊喜我</button><button onClick={share}>复制分享链接</button><button className="primary" onClick={() => void exportBundle()}>导出作品包</button></div>
     </div>
