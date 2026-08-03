@@ -28,7 +28,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .brand { display: inline-flex; align-items: center; gap: 12px; border: 0; background: none; padding: 0; cursor: pointer; text-align: left; }
 .brand-mark { width: 42px; height: 42px; position: relative; display: grid; place-items: center; color: var(--accent); filter: drop-shadow(0 0 10px rgba(134,215,255,.16)); }
 .brand-mark svg { width: 100%; height: 100%; overflow: visible; }
-.brand-mark span { position: absolute; inset: 0; display: grid; place-items: center; padding-top: 1px; color: #f2fbff; font: 700 10px/1 ui-monospace, monospace; letter-spacing: .03em; }
 .mark-frame { fill: rgba(13,26,44,.88); stroke: rgba(134,215,255,.56); stroke-width: 1; }
 .mark-orbit { fill: none; stroke: rgba(202,166,255,.6); stroke-width: 1; stroke-linecap: round; stroke-dasharray: 2 3; }
 .mark-letter { fill: none; stroke: var(--accent); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
