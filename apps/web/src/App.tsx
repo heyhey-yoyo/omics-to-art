@@ -224,7 +224,7 @@ function Workspace(): React.JSX.Element {
 }
 
 function Header({ onReset }: { onReset: () => void }): React.JSX.Element {
-  return <header className="topbar"><button className="brand" onClick={onReset}><span className="brand-mark">O/A</span><span><strong>Omics to Art</strong><small>组学画布</small></span></button><nav><a href="/methods">方法</a><a href="/privacy">隐私</a><a href="/about">关于</a></nav></header>;
+  return <header className="topbar"><button className="brand" onClick={onReset} aria-label="返回 Omics to Art 首页"><span className="brand-mark" aria-hidden="true"><svg viewBox="0 0 44 44" focusable="false"><rect className="mark-frame" x="1.5" y="1.5" width="41" height="41" rx="10"/><path className="mark-orbit" d="M7 28.5c2.8 5.7 8.4 9.2 15 9.2 8.6 0 15.5-6.9 15.5-15.5S30.6 6.7 22 6.7c-6.7 0-12.4 4.2-14.6 10.1"/><path className="mark-letter" d="M11 28.5c-1.9-2.4-2.9-5.3-2.9-8.5 0-7.7 6.2-13.9 13.9-13.9 2.5 0 4.8.6 6.8 1.8M14.8 31.4 22 12.8l7.2 18.6M17.5 24.2h9"/><circle className="mark-node" cx="35.2" cy="12.2" r="2.2"/></svg><span>O/A</span></span><span><strong>Omics to Art</strong><small>组学画布</small></span></button><nav><a href="/methods">方法</a><a href="/privacy">隐私</a><a href="/about">关于</a></nav></header>;
 }
 
 function Home(props: {
