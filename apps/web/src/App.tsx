@@ -359,7 +359,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
       cameraElevation: 8 + Math.random() * 42,
       cameraZoom: .8 + Math.random() * .5,
     }));
-    showToast(`惊喜构图：${nextTemplate.name}`);
+    showToast(`已换成：${nextTemplate.name}`);
   };
   const savePreset = (): void => {
     const preset: SavedPreset = { id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: `${effectiveTemplate.name} · ${new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`, config: { ...effectiveConfig } };
@@ -497,7 +497,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
     <div className="studio-toolbar">
       <button className="ghost-button" onClick={onBack}>← 返回首页</button>
       <div><strong>{activeDataset.id}</strong><span>{activeDataset.title}</span></div>
-      <div className="toolbar-actions"><button onClick={surprise}>✦ 惊喜我</button><button onClick={share}>复制分享链接</button><button className="primary" onClick={() => void exportBundle()}>导出作品包</button></div>
+      <div className="toolbar-actions"><button onClick={surprise}>✦ 换个构图</button><button onClick={share}>复制分享链接</button><button className="primary" onClick={() => void exportBundle()}>导出作品包</button></div>
     </div>
     <div className="studio-layout">
       <aside className="control-panel left-panel">
@@ -520,7 +520,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
         <canvas ref={canvasRef} role="img" aria-label={`${effectiveTemplate.name}：${activeDataset.title}${is3d ? "。可用方向键旋转，+/- 缩放，0 重置相机。" : ""}`} aria-keyshortcuts={is3d ? "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0" : undefined} tabIndex={0}
           onKeyDown={handleCanvasKeyDown}
           onPointerDown={(event:React.PointerEvent<HTMLCanvasElement>)=>{if(!is3d)return;event.currentTarget.setPointerCapture(event.pointerId);dragRef.current={x:event.clientX,y:event.clientY,azimuth:effectiveConfig.cameraAzimuth??-32,elevation:effectiveConfig.cameraElevation??24,moved:false};}}
-          onPointerMove={(event:React.PointerEvent<HTMLCanvasElement>)=>{const drag=dragRef.current;if(is3d&&drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;scheduleCameraUpdate(Math.max(-180,Math.min(180,drag.azimuth+dx*.45)),Math.max(-70,Math.min(70,drag.elevation-dy*.35)));return;}setHovered(hitFromClient(event.clientX,event.clientY));}}
+          onPointerMove={(event:React.PointerEvent<HTMLCanvasElement>)=>{const drag=dragRef.current;if(is3d&&drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;scheduleCameraUpdate(Math.max(-180,Math.min(180,drag.azimuth-dx*.45)),Math.max(-70,Math.min(70,drag.elevation+dy*.35)));return;}setHovered(hitFromClient(event.clientX,event.clientY));}}
           onPointerUp={(event:React.PointerEvent<HTMLCanvasElement>)=>{const drag=dragRef.current;dragRef.current=null;if(drag?.moved)return;const hit=hitFromClient(event.clientX,event.clientY);if(hit){setHovered(hit);setGeneQuery(hit.symbol??hit.id);updateConfig({highlightedGene:hit.id});showToast(`已锁定：${hit.symbol??hit.id}`);}}}
           onPointerCancel={()=>{dragRef.current=null;}}
           onLostPointerCapture={()=>{dragRef.current=null;}}
