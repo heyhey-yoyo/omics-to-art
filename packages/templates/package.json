@@ -1,0 +1,11 @@
+{
+  "name": "@omics-to-art/templates",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": {
+    "@omics-to-art/shared": "1.0.1",
+    "@omics-to-art/art-engine": "1.0.1"
+  }
+}
