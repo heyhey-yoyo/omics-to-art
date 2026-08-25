@@ -86,3 +86,7 @@ npm run deploy                 # build && wrangler deploy
 > - 不得在服务端解析表达矩阵、不得持久化用户数据、不得做自动统计显著性计算
 > - 新增模板必须同步更新 `templateRegistry`、shared 的 `TemplateId` 与模板文档
 > - 部署前通过 `npm run check`，提交 package-lock.json（当前缺失为已知未完成项）
+
+## 界面维护约定
+
+网页使用 `ydchen-portfolio` 的米白 / 赤陶色视觉系统；视觉调整不得改变确定性模板、Canvas/SVG 双实现、数据边界或导出格式。

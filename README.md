@@ -4,6 +4,10 @@ Turn public omics data into interpretable, reproducible art.
 
 Omics to Art 是一个浏览器优先的开源网页应用，把 NCBI Gene Expression Omnibus（GEO）中的表达矩阵或本地 CSV/TSV 转换成可解释的视觉作品。每种形状、位置、亮度和纹理均映射到明确的数据变量；在同一应用发布版本中，相同数据、参数、模板版本和随机种子会生成相同作品。跨应用版本的历史精确重放需要同时保留对应发布版本，因为当前包不会内置旧模板渲染器。
 
+## 界面风格
+
+产品界面采用 `ydchen-portfolio` 的暖米白、浅灰与赤陶色视觉系统，使用衬线标题和扁平化工作区；数据解析、确定性模板、Canvas/SVG 双渲染和导出语义保持不变。
+
 ## 已实现
 
 - GSE accession 校验、GEO E-utilities 元数据读取和下载页文件发现

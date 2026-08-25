@@ -239,3 +239,21 @@ canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
 button, input, select { border-radius: 8px; }
 .input-row { border-radius: 10px; overflow: hidden; }
 .entry-card, .file-card, .local-fallback, .processing-card, .accession-box, .empty-state, .error-notice, .canvas-tooltip, .toast, .grade, .control select, .control input[type=number], .gene-search input, .canvas-stage canvas { border-radius: 10px; }
+/* Portfolio visual system for the data-art studio. Keep deterministic renderers and export behavior unchanged. */
+:root{color-scheme:light;--bg:#f3eee5;--panel:rgba(255,252,247,.84);--panel-2:#ebe4d8;--text:#24221f;--muted:#6f6a62;--line:rgba(36,34,31,.18);--line-strong:rgba(36,34,31,.3);--accent:#c15f3c;--accent-2:#8e6b80;--warn:#a56b2b;--danger:#b84a45;--content:1440px}
+body{background:radial-gradient(circle at 82% -8%,rgba(193,95,60,.1),transparent 32%),var(--bg);color:var(--text)}
+.topbar{background:rgba(243,238,229,.94);border-color:var(--line);backdrop-filter:blur(14px)}
+.mark-frame{fill:#24221f;stroke:rgba(193,95,60,.5)}.mark-orbit{stroke:rgba(142,107,128,.6)}.mark-letter,.mark-node{stroke:#c15f3c;fill:#c15f3c}.brand small,.topbar nav{color:var(--muted)}.topbar nav a:hover{color:#24221f}
+.hero{background:linear-gradient(145deg,#f3eee5,#ebe4d8);padding-top:clamp(68px,9vh,108px)}
+.hero>p,.dataset-header h2,.warning-panel p,.document-page .lead,.document-page p{color:var(--muted)}
+.accession-box,.entry-card,.file-card,.processing-card,.grade,.local-fallback,.empty-state,.error-notice{background:rgba(255,252,247,.78);border-color:var(--line);border-radius:0;box-shadow:none;color:var(--text)}
+.input-row{background:#fbf8f2;border-color:var(--line)}.input-row input{color:var(--text)}.input-row button,.primary,.toolbar-actions .primary{background:#c15f3c;color:#fbf8f2}
+.entry-card:hover{background:#f0ded4;border-color:rgba(193,95,60,.4);transform:none}.file-card.recommended{border-color:rgba(193,95,60,.45);box-shadow:inset 3px 0 0 #c15f3c}
+.file-card code,.processing-card ol{color:var(--muted)}.file-card button,.local-fallback button,.toolbar-actions button,.export-grid button,.gene-search button,.inline-control button{background:#f0ded4;border-color:rgba(193,95,60,.3);color:#7c3422}
+.studio-page{background:#ebe4d8}.studio-toolbar{background:rgba(243,238,229,.94);border-color:var(--line)}.control-panel{background:#ebe4d8}.panel{border-color:var(--line);background:rgba(255,252,247,.7)}.panel h3,.control>span,.check-row{color:var(--muted)}
+.template-list button{background:transparent;border-color:var(--line);color:var(--text)}.template-list button.active{background:#f0ded4;border-color:rgba(193,95,60,.4)}
+.control select,.control input[type=number],.gene-search input{background:rgba(255,255,255,.46);color:var(--text);border-color:var(--line-strong)}
+.canvas-stage{background-color:#ebe4d8;background-image:linear-gradient(rgba(36,34,31,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(36,34,31,.055) 1px,transparent 1px)}
+.canvas-stage canvas{background:#24221f;box-shadow:none;border-color:var(--line)}
+.canvas-tooltip,.canvas-stage-actions span{background:rgba(255,252,247,.9);border-color:var(--line);color:var(--text)}.canvas-tooltip span{color:var(--muted)}
+.document-page{color:var(--text)}
