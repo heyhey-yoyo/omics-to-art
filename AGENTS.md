@@ -90,3 +90,5 @@ npm run deploy                 # build && wrangler deploy
 ## 界面维护约定
 
 网页使用 `ydchen-portfolio` 的米白 / 赤陶色视觉系统；视觉调整不得改变确定性模板、Canvas/SVG 双实现、数据边界或导出格式。
+
+视觉验收以工作区 15px、模板与快捷操作标签不小于 13px 为基线；画布浮层保持高对比度，并在 1440px 桌面与 390px 手机视口检查整体横向溢出。
