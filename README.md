@@ -105,7 +105,7 @@ npm run test:e2e
 npm run check
 ```
 
-仓库已提交 `package-lock.json`；本地和发布流水线均使用 `npm ci`，避免在发布时临时解析出不同的依赖树。Vitest 仅运行 `tests/` 下的单元测试，Playwright 用例由 `npm run test:e2e` 单独执行；首次运行端到端测试需执行 `npx playwright install chromium`。
+仓库已提交 `package-lock.json`；本地和发布流水线均使用 `npm ci`，避免在发布时临时解析出不同的依赖树。Vitest 仅运行 `tests/` 下的单元测试，Playwright 用例由 `npm run test:e2e` 单独执行；首次运行端到端测试需执行 `npx playwright install chromium`。浏览器验收应覆盖 1440px 桌面和 390px 手机宽度，确保工作台无横向溢出。
 
 ## Cloudflare 部署
 

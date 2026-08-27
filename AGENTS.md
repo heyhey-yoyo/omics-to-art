@@ -48,7 +48,7 @@ npm run deploy                 # build && wrangler deploy
 ## 测试
 
 - Vitest 8 个文件：解析（引号/CRLF/log2/CPM）、差异表识别（raw P 不误标 padj）、文件分类、令牌（篡改/过期拒绝）、**可复现性**（同输入几何一致、seed 参与）、分享参数钳制、preset 存储
-- Playwright E2E：demo 进 studio、Differential Bloom 激活与"未重算统计"警告；首次需运行 `npx playwright install chromium`
+- Playwright E2E：两个 demo 均进入 studio；表达示例显示“数据护照”和四种导出项，差异示例激活“差异绽放”并显示“差异结果”；浏览器验收还须覆盖 390px 宽度下无横向溢出。首次需运行 `npx playwright install chromium`
 - 测试直接 import 源码 ts，无额外构建步骤
 
 ## 部署
