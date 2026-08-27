@@ -331,6 +331,14 @@ function isPrivateHost(host: string): boolean {
   return lower === "localhost" || lower.endsWith(".local") || /^(10\.|127\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(lower);
 }
 
+interface EdgeCacheStorage extends CacheStorage {
+  default: Cache;
+}
+
+function defaultCache(): Cache {
+  return (caches as EdgeCacheStorage).default;
+}
+
 function withApiHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("X-Content-Type-Options", "nosniff");
@@ -341,7 +349,7 @@ function withApiHeaders(response: Response): Response {
 }
 
 async function cachedJson(request: Request, ctx: ExecutionContext, ttl: number, producer: () => Promise<Response>): Promise<Response> {
-  const cache = caches.default;
+  const cache = defaultCache();
   const cached = await cache.match(request);
   if (cached) return cached;
   const response = await producer();
@@ -358,11 +366,12 @@ async function cachedJson(request: Request, ctx: ExecutionContext, ttl: number, 
 async function cachedValue<T>(origin: string, key: string, ctx: ExecutionContext, ttl: number, producer: () => Promise<T>): Promise<T> {
   const cacheUrl = new URL(`/__internal-cache/${key}`, origin);
   const request = new Request(cacheUrl.toString());
-  const cached = await caches.default.match(request);
+  const cache = defaultCache();
+  const cached = await cache.match(request);
   if (cached) return await cached.json() as T;
   const value = await producer();
   const response = json(value, { headers: { "Cache-Control": `public, s-maxage=${ttl}` } });
-  ctx.waitUntil(caches.default.put(request, response.clone()));
+  ctx.waitUntil(cache.put(request, response.clone()));
   return value;
 }
 

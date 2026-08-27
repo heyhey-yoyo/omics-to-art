@@ -62,7 +62,7 @@ Worker 不缓冲、不解压、不统计大型表达矩阵。矩阵计算全部�
 要求 Node.js 22.12 或更新版本。
 
 ```bash
-npm install
+npm ci
 cp .dev.vars.example .dev.vars
 ```
 
@@ -105,7 +105,7 @@ npm run test:e2e
 npm run check
 ```
 
-首次在可联网环境安装后应生成并提交 `package-lock.json`（当前缺失，为已知未完成项）。若后续恢复 CI，应要求提交锁文件并使用 `npm ci`，避免在发布流水线里临时解析出不同的依赖树。
+仓库已提交 `package-lock.json`；本地和发布流水线均使用 `npm ci`，避免在发布时临时解析出不同的依赖树。Vitest 仅运行 `tests/` 下的单元测试，Playwright 用例由 `npm run test:e2e` 单独执行；首次运行端到端测试需执行 `npx playwright install chromium`。
 
 ## Cloudflare 部署
 

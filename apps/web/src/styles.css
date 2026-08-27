@@ -282,3 +282,8 @@ body{font-size:15px}
 .passport div{grid-template-columns:92px minmax(0,1fr);gap:12px;padding:9px 0;border-bottom-color:rgba(36,34,31,.14)}
 .passport dt{color:#5f5a53;font-size:13px;font-weight:600;line-height:1.5}
 .passport dd{color:#24221f;font:14px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;font-weight:550}
+
+@media (max-width:760px){
+  .toolbar-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:8px}
+  .toolbar-actions button,.toolbar-actions .primary{min-width:0;padding:11px 8px;white-space:normal;font-size:14px;line-height:1.3}
+}

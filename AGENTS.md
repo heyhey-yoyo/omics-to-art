@@ -37,7 +37,7 @@
 ## 运行与构建
 
 ```bash
-npm install                    # 首次需联网（当前仓库无 package-lock.json，提交锁文件为已知未完成项）
+npm ci                         # 按已提交锁文件安装固定依赖版本
 cp .dev.vars.example .dev.vars # 填 NCBI_EMAIL / PROXY_SIGNING_SECRET
 npm run dev:worker             # 终端一：wrangler dev（8787）
 npm run dev:web                # 终端二：vite（/api 代理到 8787）
@@ -48,7 +48,7 @@ npm run deploy                 # build && wrangler deploy
 ## 测试
 
 - Vitest 8 个文件：解析（引号/CRLF/log2/CPM）、差异表识别（raw P 不误标 padj）、文件分类、令牌（篡改/过期拒绝）、**可复现性**（同输入几何一致、seed 参与）、分享参数钳制、preset 存储
-- Playwright E2E：demo 进 studio、Differential Bloom 激活与"未重算统计"警告
+- Playwright E2E：demo 进 studio、Differential Bloom 激活与"未重算统计"警告；首次需运行 `npx playwright install chromium`
 - 测试直接 import 源码 ts，无额外构建步骤
 
 ## 部署
@@ -85,7 +85,7 @@ npm run deploy                 # build && wrangler deploy
 > - 修改模板或渲染逻辑时必须保持确定性（固定种子、版本哈希）；跨版本重放需归档 manifest 与对应发布版本
 > - 不得在服务端解析表达矩阵、不得持久化用户数据、不得做自动统计显著性计算
 > - 新增模板必须同步更新 `templateRegistry`、shared 的 `TemplateId` 与模板文档
-> - 部署前通过 `npm run check`，提交 package-lock.json（当前缺失为已知未完成项）
+> - 部署前通过 `npm run check`，保持 `package-lock.json` 与工作区依赖同步
 
 ## 界面维护约定
 

@@ -75,7 +75,7 @@ export async function createZip(files: Array<{ name: string; data: Blob | string
   }
   const centralSize = offset - centralStart;
   chunks.push(concat(u32(0x06054b50), u16(0), u16(0), u16(entries.length), u16(entries.length), u32(centralSize), u32(centralStart), u16(0)));
-  return new Blob(chunks, { type: "application/zip" });
+  return new Blob(chunks as unknown as BlobPart[], { type: "application/zip" });
 }
 
 function concat(...parts: Uint8Array[]): Uint8Array {

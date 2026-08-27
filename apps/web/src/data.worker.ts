@@ -95,7 +95,8 @@ function limitByteStream(stream: ReadableStream<Uint8Array>, limit: number, mess
 
 async function gunzipStream(stream: ReadableStream<Uint8Array>): Promise<ReadableStream<Uint8Array>> {
   if (typeof DecompressionStream !== "undefined") {
-    return limitByteStream(stream.pipeThrough(new DecompressionStream("gzip")), DECOMPRESSED_HARD_LIMIT_BYTES, "解压后的矩阵超过 1 GB 安全上限。");
+    const decompressor = new DecompressionStream("gzip") as unknown as ReadableWritablePair<Uint8Array, Uint8Array>;
+    return limitByteStream(stream.pipeThrough(decompressor), DECOMPRESSED_HARD_LIMIT_BYTES, "解压后的矩阵超过 1 GB 安全上限。");
   }
   const output = new TransformStream<Uint8Array, Uint8Array>();
   const writer = output.writable.getWriter();
@@ -157,7 +158,8 @@ async function parseMatrixStream(stream: ReadableStream<Uint8Array>, options: St
       controller.enqueue(chunk);
     },
   }));
-  const reader = countedStream.pipeThrough(new TextDecoderStream()).getReader();
+  const decoder = new TextDecoderStream() as unknown as ReadableWritablePair<Uint8Array, Uint8Array>;
+  const reader = (countedStream.pipeThrough(decoder) as unknown as ReadableStream<string>).getReader();
   let buffer = "";
   let parsedRows = 0;
   let originalRows = 0;
