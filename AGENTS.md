@@ -70,7 +70,7 @@ npm run deploy                 # build && wrangler deploy
 
 ## 代码组织与风格约定
 
-- **版本管理**：对外版本号以 GitHub Release 为准；页面不显示版本号。代码内版本常量（根 `package.json`、`apps/web/package.json`、`wrangler.jsonc` 的 `APP_VERSION`）必须与最新 Release 对齐；内部 `templateVersion` 等为模板机制版本，独立演进。
+- **版本管理**：对外版本号以 GitHub Release 为准；页面不显示版本号。代码内版本常量（根与各工作区的 `package.json`、内部依赖钉住版本、`wrangler.jsonc` 的 `APP_VERSION`）必须与最新 Release 对齐，改版本时用 `npm install --package-lock-only` 同步 lockfile；内部 `templateVersion` 等为模板机制版本，独立演进。
 - 严格分层：shared → data-engine → art-engine → templates → web；**模板绝不读 GEO 原始文本**，只消费 `VisualDataset`
 - 可复现性（核心约束）：布局禁止 `Math.random()`，一律用 `SeededRandom`（`stableSeed` FNV-1a 哈希）；分享链接总是把 `templateVersion` 升级为当前内置版本；SVG metadata 内嵌 `{template, seed}`
 - `data-engine` 与 `data.worker.ts` 是同一逻辑的双实现，改动需同步两处
