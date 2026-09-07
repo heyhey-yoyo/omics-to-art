@@ -79,7 +79,7 @@ npm run deploy
 
 `wrangler.jsonc` 使用 Workers Static Assets，将 `apps/web/dist` 与 `worker/src/index.ts` 一次发布。
 
-## 科学边界
+## 责任边界
 
 本项目是数据可视化与艺术生成工具，不替代正式的生物信息学分析。视觉差异不能直接解释为统计显著性、因果关系、疾病机制或临床结论。Differential Bloom 只读取用户或上游流程已经提供的 `log2FoldChange`、`padj/pvalue` 和可选 `baseMean`；应用不重新计算显著性，并明确区分原始 `pvalue` 与校正后的 `padj/FDR`。超出 0–1 合法范围的显著性值会被排除；负 raw count 会在 CPM 视觉变换中按 0 处理并显示警告。
 
@@ -118,4 +118,4 @@ EGFR,-0.76,0.014,0.061,582
 > **⚠️ 任何修改此项目的 AI 代理都必须同步更新本文件与 [AGENTS.md](./AGENTS.md)。**
 >
 > - 修改模板或渲染逻辑时保持确定性（固定种子、版本哈希），跨版本重放需归档 manifest
-> - 版本号以 GitHub Release 为准（当前 v1.0.0，对应 `package.json` version），页面不显示版本号
+> - 版本号以 GitHub Release 为准，页面不显示版本号；代码内版本常量与最新 Release 对齐

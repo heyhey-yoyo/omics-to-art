@@ -34,7 +34,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .mark-letter { fill: none; stroke: var(--accent); stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; opacity: .82; }
 .mark-node { fill: var(--accent); stroke: #071116; stroke-width: 1; }
 .brand strong, .brand small { display: block; }
-.brand strong { font-size: 18px; letter-spacing: .02em; line-height: 1.15; }
+.brand strong { font-family: Georgia, "Times New Roman", "Songti SC", "STSong", serif; font-weight: 400; font-size: 18px; letter-spacing: -.02em; line-height: 1.15; }
 .brand small { color: var(--muted); font-size:12px; margin-top: 2px; letter-spacing: .05em; }
 .topbar nav { display: flex; gap: 24px; color: #b9c8cb; font-size:14px; }
 .topbar nav a:hover { color: white; }
@@ -265,6 +265,7 @@ body{font-size:15px}
 .shortcut-hint,.canvas-stage-actions span,.canvas-tooltip small{color:#5f5a53}
 .brand-mark{background:url("/project-mark.svg") center/100% 100% no-repeat;filter:none}
 .brand-mark svg{visibility:hidden}
+@media(max-width:640px){.brand-mark{width:40px;height:40px}}
 
 /* Finish the light portfolio treatment on home and studio utility surfaces. */
 .hero-art{background:radial-gradient(circle at 48% 46%,rgba(193,95,60,.14),transparent 28%),linear-gradient(145deg,#fbf8f2,#e6d9ce);border-left-color:var(--line)}

@@ -1,4 +1,4 @@
-# Omics to Art · 组学画布 — AI 代理工作指南
+# Omics to Art · 组学画布 — 项目说明（供 AI 编程代理阅读）
 
 本文件供 AI 编码代理使用。修改代码前请先阅读本文件。
 
@@ -19,11 +19,18 @@
 
 | 路径 | 作用 |
 | --- | --- |
+| `apps/web/index.html` | Vite 入口 HTML |
+| `apps/web/src/main.tsx` | React 入口 |
 | `apps/web/src/App.tsx` | 全部 UI + 状态机（home/checking/files/processing/studio） |
+| `apps/web/src/api.ts` | `/api` 请求封装（`ApiError` 错误码、重试标记、诊断 ID） |
 | `apps/web/src/data.worker.ts` | 流式 gzip/CSV 解析 Worker（`data-engine` 的流式双实现） |
 | `apps/web/src/export.ts` | PNG/SVG/manifest/手写 ZIP 导出（零依赖） |
 | `apps/web/src/share-state.ts` | 分享链接编解码 + `sanitizeShareState` 白名单校验 |
-| `apps/web/src/limits.ts` | 全部硬限制常量（文件/解压/画布/分享参数） |
+| `apps/web/src/preset-storage.ts` | 本地收藏预设（localStorage，最多 8 条，白名单清洗） |
+| `apps/web/src/limits.ts` | 硬限制常量（文件/解压/单行/画布/分享参数） |
+| `apps/web/src/styles.css` | 全局样式与视觉令牌 |
+| `apps/web/vite.config.ts` | Vite 配置（`/api` 代理到 127.0.0.1:8787） |
+| `apps/web/public/` | 静态资源（`_headers`、`favicon.svg`、`project-mark.svg`） |
 | `packages/shared/src` | 共享类型、`normalizeGse`、免责声明、`assertNever` |
 | `packages/data-engine/src` | 纯函数解析与统计（parseTextTable、表 → VisualDataset、demo 数据） |
 | `packages/art-engine/src` | 主题调色板、`SeededRandom`、`stableSeed`、ArtTemplate 接口、几何工具 |
@@ -31,8 +38,18 @@
 | `worker/src/index.ts` | Worker 路由、E-utilities、代理、缓存、限流 |
 | `worker/src/file-discovery.ts` | GEO 下载页链接解析与文件分类 |
 | `worker/src/proxy-token.ts` | HMAC 短时令牌签名/验证 |
+| `worker/tsconfig.json` / `worker/src/worker-configuration.d.ts` | Worker 端 TS 配置与绑定类型 |
 | `tests/` | Vitest 单元测试（8 个文件） |
 | `e2e/demo.spec.ts` | Playwright 用例（2 个） |
+| `fixtures/` | 单元测试与 e2e 共用的矩阵样例 |
+| `docs/` | `data-compatibility.md`、`operations.md` 等文档 |
+| `wrangler.jsonc` | Workers Static Assets 与代理配置 |
+| `playwright.config.ts` / `vitest.config.ts` / `tsconfig.base.json` | e2e、单元测试与共享 TS 配置 |
+| `.dev.vars.example` | 本地 secrets 模板（NCBI_API_KEY / NCBI_EMAIL / PROXY_SIGNING_SECRET） |
+| `package.json` / `package-lock.json` | npm workspaces 根清单与锁定依赖 |
+| `LICENSE` | MIT 许可证 |
+| `SECURITY.md` / `CONTRIBUTING.md` / `IMPLEMENTATION_STATUS.md` | 安全政策、贡献指南与实现状态 |
+| `.gitignore` | Git 忽略规则 |
 
 ## 运行与构建
 
@@ -53,13 +70,13 @@ npm run deploy                 # build && wrangler deploy
 
 ## 代码组织与风格约定
 
-- **版本管理**：对外版本号以 GitHub Release 为准（当前 v1.0.0，对应 `package.json` version）；页面不显示版本号。内部 `templateVersion` 等为模板机制版本，独立演进。
+- **版本管理**：对外版本号以 GitHub Release 为准；页面不显示版本号。代码内版本常量（根 `package.json`、`apps/web/package.json`、`wrangler.jsonc` 的 `APP_VERSION`）必须与最新 Release 对齐；内部 `templateVersion` 等为模板机制版本，独立演进。
 - 严格分层：shared → data-engine → art-engine → templates → web；**模板绝不读 GEO 原始文本**，只消费 `VisualDataset`
 - 可复现性（核心约束）：布局禁止 `Math.random()`，一律用 `SeededRandom`（`stableSeed` FNV-1a 哈希）；分享链接总是把 `templateVersion` 升级为当前内置版本；SVG metadata 内嵌 `{template, seed}`
 - `data-engine` 与 `data.worker.ts` 是同一逻辑的双实现，改动需同步两处
 - 新模板必须实现：deterministic prepare、Canvas + SVG 双渲染（XML 转义、稳定元素 id）、简单+技术双图例；颜色不能是方向/分类的唯一编码
 - 差异结果只用投稿者提供的 log2FC/padj，`significanceKind` 区分 adjusted/p-value；UI 文案与错误消息全部为中文
-- 硬限制常量集中在 `apps/web/src/limits.ts` 一处；`TemplateId` 联合类型与 `templateRegistry` 需同步更新
+- 硬限制常量集中在 `apps/web/src/limits.ts`（文件/解压/单行/画布/分享参数）；样本列 / 艺术基因上限（100 / 5000）目前内联在 `apps/web/src/data.worker.ts` 与 `packages/data-engine/src/index.ts`，改动需同步多处。`TemplateId` 联合类型与 `templateRegistry` 需同步更新
 
 ## 部署
 
@@ -82,7 +99,7 @@ npm run deploy                 # build && wrangler deploy
 
 ## 标志维护约定
 
-项目标志采用统一的深灰方章、米白线条与赤陶色识别点，页面标志与 favicon 共用同一 `project-mark.svg`。后续替换必须保持原标志容器宽高，不得借机改变页眉、网格或页面布局。
+项目标志采用统一的深灰方章、米白线条与赤陶色识别点，页面标志与 favicon 共用同一 `apps/web/public/project-mark.svg`。后续替换必须保持原标志容器宽高，不得借机改变页眉、网格或页面布局。
 
 ---
 

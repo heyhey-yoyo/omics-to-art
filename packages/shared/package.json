@@ -1,6 +1,6 @@
 {
   "name": "@omics-to-art/shared",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "exports": {

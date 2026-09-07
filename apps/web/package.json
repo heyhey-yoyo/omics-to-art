@@ -1,6 +1,6 @@
 {
   "name": "@omics-to-art/web",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,10 +9,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@omics-to-art/art-engine": "1.0.1",
-    "@omics-to-art/data-engine": "1.0.1",
-    "@omics-to-art/shared": "1.0.1",
-    "@omics-to-art/templates": "1.0.1",
+    "@omics-to-art/art-engine": "1.0.0",
+    "@omics-to-art/data-engine": "1.0.0",
+    "@omics-to-art/shared": "1.0.0",
+    "@omics-to-art/templates": "1.0.0",
     "fflate": "0.8.2",
     "react": "19.2.8",
     "react-dom": "19.2.8"
