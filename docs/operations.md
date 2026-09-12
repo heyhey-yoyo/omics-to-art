@@ -39,7 +39,9 @@ The default free-plan architecture assumes Worker-side metadata work is small an
 
 ## Release gate
 
-A public release requires a committed `package-lock.json`, successful `npm run check`, a Wrangler dry run, live health check, at least 20 recorded GSE compatibility checks, and cross-browser large-file tests.
+The repository has a committed `package-lock.json` and deploys through Cloudflare Git integration. Use `npm ci`, `npm run check`, and `npm run test:e2e` for application changes; verify the deployed commit, health endpoint, and loaded assets after deployment. Run a Wrangler dry run when changing Worker packaging or configuration.
+
+The full data-compatibility acceptance gate remains at least 20 recorded GSE checks and cross-browser large-file tests. It has not been certified by the visual maintenance pass. Documentation-only changes need documentation/link checks and deployment verification; they do not constitute a fresh data-compatibility release. Current implementation and validation boundaries are recorded in [IMPLEMENTATION_STATUS.md](../IMPLEMENTATION_STATUS.md).
 
 
 ## File-discovery checks

@@ -1,5 +1,8 @@
 # Omics to Art 产品企划书
 
+> 本文件保留产品规划语境；当前已实现功能和未认证范围以实现状态文档为准。 [当前说明](../IMPLEMENTATION_STATUS.md)。
+
+
 **中文暂定名：** 组学画布  
 **英文名：** Omics to Art  
 **GitHub 仓库名：** `omics-to-art`  
