@@ -253,7 +253,7 @@ async function fetchWithRetry(url: string, init: RequestInit, attempts = 3): Pro
 function candidateFromDiscovered(item: DiscoveredFile, proxyToken: string): FileCandidate {
   const type = item.sourceKind === "supplementary" || item.sourceKind === "series-matrix" || item.sourceKind.startsWith("ncbi-") ? "expression-matrix" : "unknown";
   return {
-    id: item.sourceKind === "supplementary" ? `supplementary-${shortHash(item.fileName)}` : item.sourceKind,
+    id: `${item.sourceKind}-${shortHash(item.fileName)}`,
     label: labelForKind(item.sourceKind, item.fileName),
     fileName: item.fileName,
     type,

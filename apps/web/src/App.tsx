@@ -19,6 +19,7 @@ import { canvasToBlob, copyText, createZip, downloadBlob, manifestReadme } from 
 import { SOURCE_FILE_HARD_LIMIT_BYTES, SOURCE_FILE_WARNING_BYTES } from "./limits";
 import { DEFAULT_ARTWORK_CONFIG, encodeShareState, readShareState, type SharedArtworkState } from "./share-state";
 import { loadSavedPresets, persistSavedPresets, type SavedPreset } from "./preset-storage";
+import { version as appVersion } from "../package.json";
 
 type Stage = "home" | "checking" | "files" | "processing" | "studio";
 type WorkerMessage =
@@ -253,7 +254,7 @@ function Home(props: {
         <button className="entry-card" onClick={() => fileInput.current?.click()}><strong>本地上传</strong><p>CSV / TSV / gzip 只在浏览器中处理，不会上传。</p></button>
         <a className="entry-card" href="/methods"><strong>查看方法</strong><p>了解表达变换、特征选择和视觉映射规则。</p></a>
       </div>
-      <input ref={fileInput} type="file" hidden accept=".csv,.tsv,.txt,.gz" onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file = event.currentTarget.files?.[0]; if (file) props.processLocal(file); }} />
+      <input ref={fileInput} type="file" hidden accept=".csv,.tsv,.txt,.gz" onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) props.processLocal(file); }} />
     </section>
     <aside className="hero-art" aria-hidden="true"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="orbit orbit-c"/></aside>
   </main>;
@@ -269,7 +270,7 @@ function FileSelection({ series, files, processCandidate, processLocal, error, d
       {files.files.filter((file) => file.type === "expression-matrix").map((file) => <article className={`file-card ${file.recommended ? "recommended" : ""}`} key={`${file.id}-${file.fileName}`}><div><span className="file-source">{file.source}</span><h3>{file.label}</h3><code>{file.fileName}</code><p>{file.sizeLabel ?? "大小由上游在下载时提供"} · {file.format}</p>{file.warnings.map((warning) => <small key={warning}>△ {warning}</small>)}</div><button onClick={() => processCandidate(file)}>{file.recommended ? "使用推荐矩阵" : "使用此矩阵"}</button></article>)}
       {files.files.filter((file) => file.type === "expression-matrix").length === 0 && <div className="empty-state"><h3>没有发现首版可读取的标准矩阵</h3><p>可以上传从 GEO 或分析流程导出的表达矩阵、pseudobulk 矩阵或差异结果。</p></div>}
     </section>
-    <div className="local-fallback"><div><strong>使用本地处理后数据</strong><p>文件不会离开浏览器，也不会写入服务端日志。</p></div><button onClick={() => input.current?.click()}>选择 CSV / TSV</button><input hidden ref={input} type="file" accept=".csv,.tsv,.txt,.gz" onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file=event.currentTarget.files?.[0]; if(file) processLocal(file); }}/></div>
+    <div className="local-fallback"><div><strong>使用本地处理后数据</strong><p>文件不会离开浏览器，也不会写入服务端日志。</p></div><button onClick={() => input.current?.click()}>选择 CSV / TSV</button><input hidden ref={input} type="file" accept=".csv,.tsv,.txt,.gz" onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file=event.currentTarget.files?.[0]; event.currentTarget.value=""; if(file) processLocal(file); }}/></div>
   </main>;
 }
 
@@ -303,6 +304,8 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
   const effectiveConfig = effectiveTemplate.id === config.template ? config : { ...config, template: effectiveTemplate.id, templateVersion: effectiveTemplate.version };
   const artwork = useMemo(() => effectiveTemplate.prepare(activeDataset, effectiveConfig), [activeDataset, effectiveTemplate, effectiveConfig]);
   const is3d = effectiveTemplate.dimension === "3d";
+  const is3dRef = useRef(is3d);
+  is3dRef.current = is3d;
 
   const updateConfig = (patch: Partial<ArtworkConfig>): void => setConfig((current) => ({ ...current, ...patch }));
   const scheduleCameraUpdate = (cameraAzimuth: number, cameraElevation: number): void => {
@@ -423,6 +426,18 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
   }, [artwork, effectiveConfig, effectiveTemplate]);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const onWheel = (event: WheelEvent): void => {
+      if (!is3dRef.current) return;
+      event.preventDefault();
+      setConfig((current) => ({ ...current, cameraZoom: Math.max(.5, Math.min(2.2, (current.cameraZoom ?? 1) * (event.deltaY > 0 ? .92 : 1.08))) }));
+    };
+    canvas.addEventListener("wheel", onWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", onWheel);
+  }, []);
+
+  useEffect(() => {
     if (!touring) return;
     const id = window.setInterval(() => {
       if (effectiveTemplate.dimension === "3d") {
@@ -459,7 +474,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
 
   const manifest = (): ArtworkManifest => ({
     schemaVersion: "1.0",
-    application: { name: "Omics to Art", version: "1.0.2" },
+    application: { name: "Omics to Art", version: appVersion },
     dataset: { id: activeDataset.id, title: activeDataset.title, source: activeDataset.source, samples: activeDataset.samples.map((sample) => sample.id), unit: activeDataset.summary.unit },
     processing: activeDataset.provenance,
     artwork: effectiveConfig,
@@ -517,7 +532,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
       </aside>
       <section ref={stageRef} className={`canvas-stage ${is3d?"is-3d":""}`}>
         <div className="canvas-stage-actions"><span>{is3d?"3D · 拖拽/方向键旋转 · 滚轮或 +/- 缩放":"点击作品中的元素可锁定基因"}</span><button onClick={toggleFullscreen}>⛶ 全屏</button></div>
-        <canvas ref={canvasRef} role="img" aria-label={`${effectiveTemplate.name}：${activeDataset.title}${is3d ? "。可用方向键旋转，+/- 缩放，0 重置相机。" : ""}`} aria-keyshortcuts={is3d ? "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0" : undefined} tabIndex={0}
+        <canvas ref={canvasRef} role="img" style={{ aspectRatio: `${effectiveConfig.width} / ${effectiveConfig.height}`, "--canvas-w": effectiveConfig.width, "--canvas-h": effectiveConfig.height } as React.CSSProperties} aria-label={`${effectiveTemplate.name}：${activeDataset.title}${is3d ? "。可用方向键旋转，+/- 缩放，0 重置相机。" : ""}`} aria-keyshortcuts={is3d ? "ArrowLeft ArrowRight ArrowUp ArrowDown + - 0" : undefined} tabIndex={0}
           onKeyDown={handleCanvasKeyDown}
           onPointerDown={(event:React.PointerEvent<HTMLCanvasElement>)=>{if(!is3d)return;event.currentTarget.setPointerCapture(event.pointerId);dragRef.current={x:event.clientX,y:event.clientY,azimuth:effectiveConfig.cameraAzimuth??-32,elevation:effectiveConfig.cameraElevation??24,moved:false};}}
           onPointerMove={(event:React.PointerEvent<HTMLCanvasElement>)=>{const drag=dragRef.current;if(is3d&&drag){const dx=event.clientX-drag.x,dy=event.clientY-drag.y;if(Math.abs(dx)+Math.abs(dy)>4)drag.moved=true;scheduleCameraUpdate(Math.max(-180,Math.min(180,drag.azimuth-dx*.45)),Math.max(-70,Math.min(70,drag.elevation+dy*.35)));return;}setHovered(hitFromClient(event.clientX,event.clientY));}}
@@ -525,7 +540,6 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
           onPointerCancel={()=>{dragRef.current=null;}}
           onLostPointerCapture={()=>{dragRef.current=null;}}
           onPointerLeave={()=>{if(!dragRef.current)setHovered(null);}}
-          onWheel={(event:React.WheelEvent<HTMLCanvasElement>)=>{if(!is3d)return;event.preventDefault();const next=Math.max(.5,Math.min(2.2,(effectiveConfig.cameraZoom??1)*(event.deltaY > 0 ? .92 : 1.08)));updateConfig({cameraZoom:next});}}
         />
         {hovered&&<div className="canvas-tooltip"><strong>{hovered.symbol??hovered.id}</strong><span>mean {hovered.mean.toFixed(3)}</span><span>variance {hovered.variance.toFixed(3)}</span>{hovered.log2FoldChange!==undefined&&<span>log2FC {hovered.log2FoldChange.toFixed(3)}</span>}{hovered.padj!==undefined&&<span>{hovered.significanceKind==="p-value"?"p value":"padj"} {hovered.padj.toExponential(2)}</span>}<small>点击锁定该基因</small></div>}
       </section>
@@ -544,7 +558,13 @@ function Passport({ dataset, config }: { dataset: VisualDataset; config: Artwork
   const items=[['来源',dataset.source.accession??dataset.source.sourceFile??dataset.source.type],['数据类型',UNIT_LABELS[dataset.summary.unit] ?? dataset.summary.unit],['源基因数',dataset.summary.originalFeatureCount.toLocaleString()],['有效基因数',dataset.summary.validFeatureCount.toLocaleString()],['艺术基因数',Math.min(config.geneCount,dataset.features.length).toLocaleString()],['样本数',dataset.samples.length.toString()],['缺失率',`${(dataset.summary.missingRate*100).toFixed(2)}%`],['变换',dataset.summary.transform],['模板',`${config.template} ${config.templateVersion}`],['随机种子',String(config.seed)]];
   return <dl className="passport">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
 }
-function Panel({title,children}:{title:string;children:React.ReactNode}):React.JSX.Element{return <section className="panel"><h3>{title}</h3>{children}</section>}
+function Panel({title,children}:{title:string;children:React.ReactNode}):React.JSX.Element{
+  const collapsible = title.includes('模板') || title.startsWith('样本选择');
+  const [expanded, setExpanded] = useState(() => !window.matchMedia('(max-width: 760px)').matches);
+  return collapsible
+    ? <details className="panel collapsible-panel" open={expanded} onToggle={(event)=>setExpanded(event.currentTarget.open)}><summary>{title}</summary>{children}</details>
+    : <section className="panel"><h3>{title}</h3>{children}</section>;
+}
 function Control({label,children}:{label:string;children:React.ReactNode}):React.JSX.Element{return <label className="control"><span>{label}</span>{children}</label>}
 function Meta({label,value}:{label:string;value:string}):React.JSX.Element{return <div className="meta-card"><span>{label}</span><strong>{value}</strong></div>}
 function ErrorNotice({message,diagnostic}:{message:string;diagnostic:string|null}):React.JSX.Element{return <div className="error-notice" role="alert"><strong>{message}</strong>{diagnostic&&<button onClick={()=>void copyText(diagnostic).catch(()=>undefined)}>复制诊断信息</button>}</div>}
