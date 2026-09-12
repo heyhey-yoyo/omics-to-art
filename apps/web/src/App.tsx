@@ -256,7 +256,6 @@ function Home(props: {
       </div>
       <input ref={fileInput} type="file" hidden accept=".csv,.tsv,.txt,.gz" onChange={(event: React.ChangeEvent<HTMLInputElement>) => { const file = event.currentTarget.files?.[0]; event.currentTarget.value = ""; if (file) props.processLocal(file); }} />
     </section>
-    <aside className="hero-art" aria-hidden="true"><div className="orbit orbit-a"/><div className="orbit orbit-b"/><div className="orbit orbit-c"/></aside>
   </main>;
 }
 
