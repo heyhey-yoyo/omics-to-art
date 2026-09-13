@@ -149,12 +149,17 @@ interface Candidate {
   baseMean?: number;
 }
 
-async function parseMatrixStream(stream: ReadableStream<Uint8Array>, options: StreamOptions): Promise<VisualDataset> {
+export async function parseMatrixStream(stream: ReadableStream<Uint8Array>, options: StreamOptions): Promise<VisualDataset> {
   let bytesRead = 0;
+  let lineBytes = 0;
   const countedStream = stream.pipeThrough(new TransformStream<Uint8Array, Uint8Array>({
     transform(chunk, controller) {
       bytesRead += chunk.byteLength;
       if (bytesRead > DECOMPRESSED_HARD_LIMIT_BYTES) throw new Error("解压后的矩阵超过 1 GB 安全上限。");
+      for (const byte of chunk) {
+        if (byte === 10) lineBytes = 0;
+        else if (++lineBytes > MAX_TEXT_LINE_BYTES) throw new Error("检测到超过 16 MB 的单行文本，文件可能不是标准表达矩阵。");
+      }
       controller.enqueue(chunk);
     },
   }));
@@ -284,7 +289,7 @@ async function parseMatrixStream(stream: ReadableStream<Uint8Array>, options: St
       completeness: 1,
       provisionalScore: -Math.log10(safePadj) + Math.abs(fc) * 0.2,
       log2FoldChange: fc,
-      padj: safePadj,
+      padj: padj,
       significanceKind,
       baseMean,
     };

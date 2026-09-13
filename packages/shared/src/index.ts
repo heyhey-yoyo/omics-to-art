@@ -165,6 +165,7 @@ export interface ArtworkManifest {
   };
   processing: ProcessingManifest;
   artwork: ArtworkConfig;
+  rendering?: { featureCount: number; featureIds: string[] };
   generatedAt: string;
   disclaimer: string;
 }

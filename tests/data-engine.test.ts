@@ -71,3 +71,48 @@ describe("data engine", () => {
   });
 
 });
+
+it("records effective feature and sample limits in provenance for both pure paths", () => {
+  for(const table of [
+    parseTextTable('gene,s\n'+Array.from({length:10001},(_,i)=>`g${i},${i+1}`).join('\n')),
+    parseTextTable('gene,log2FC,padj\n'+Array.from({length:10001},(_,i)=>`g${i},1,0.1`).join('\n')),
+  ]){
+    for(const [requested,expected] of [[undefined,5000],[20000,10000],[1,10],[500.9,500]] as const){
+      const data=tableToVisualDataset(table,{source,title:'effective limits',maxFeatures:requested});
+      expect(data.features).toHaveLength(expected);
+      expect(data.provenance.filtering.maximumFeatures).toBe(expected);
+      expect(data.provenance.selectedFeatures).toBe(expected);
+    }
+  }
+  const wide=parseTextTable('gene,'+Array.from({length:101},(_,i)=>'s'+i).join(',')+'\ng,'+Array(101).fill('1').join(','));
+  for(const [requested,expected] of [[undefined,100],[101,100],[0,1],[2.9,2]] as const){
+    const data=tableToVisualDataset(wide,{source,title:'effective sample limit',maxSamples:requested});
+    expect(data.samples).toHaveLength(expected);
+    expect(data.provenance.filtering.maximumSamples).toBe(expected);
+    expect(data.provenance.selectedSamples).toBe(expected);
+  }
+});
+
+it("keeps raw zero significance and aligns browser and pure defaults", async () => {
+  const {vi}=await import('vitest');
+  vi.stubGlobal('self',{postMessage(){}});
+  try {
+    const {parseMatrixStream}=await import('../apps/web/src/data.worker');
+    const text='gene,log2FC,padj\n'+Array.from({length:4000},(_,i)=>'g'+i+',1,0').join('\n');
+    const pure=tableToVisualDataset(parseTextTable(text),{source,title:'bounds'});
+    const browser=await parseMatrixStream(new Blob([text]).stream(),{source,title:'bounds',maxFeatures:5000,maxSamples:100});
+    expect(pure.features).toHaveLength(4000);expect(browser.features).toHaveLength(4000);
+    expect(pure.features[0]?.padj).toBe(0);expect(browser.features[0]?.padj).toBe(0);
+    const wide='gene,'+Array.from({length:101},(_,i)=>'s'+i).join(',')+'\ng,'+Array(101).fill('1').join(',');
+    expect(tableToVisualDataset(parseTextTable(wide),{source,title:'wide',maxSamples:101}).samples).toHaveLength(100);
+    const chunk=new TextEncoder().encode('基'.repeat(3*1024*1024));
+    // The first large chunk ends inside a three-byte UTF-8 code point, then the
+    // same line continues past 16 MiB. Count source bytes before decoding.
+    const oversized=new ReadableStream<Uint8Array>({start(controller){controller.enqueue(new TextEncoder().encode('gene,s\n'));controller.enqueue(chunk.subarray(0,chunk.length-1));controller.enqueue(chunk.subarray(chunk.length-1));controller.enqueue(chunk);controller.enqueue(new TextEncoder().encode(',1'));controller.close();}});
+    await expect(parseMatrixStream(oversized,{source,title:'oversized',maxFeatures:5000,maxSamples:100})).rejects.toThrow('16 MB');
+    const small=new TextEncoder().encode('gene,s\n基因,1\n');
+    const split=new ReadableStream<Uint8Array>({start(controller){for(const byte of small)controller.enqueue(Uint8Array.of(byte));controller.close();}});
+    const splitResult=await parseMatrixStream(split,{source,title:'split-unicode',maxFeatures:5000,maxSamples:100});
+    expect(splitResult.features[0]?.id).toBe('基因');
+  } finally {vi.unstubAllGlobals();}
+});

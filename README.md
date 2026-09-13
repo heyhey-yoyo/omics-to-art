@@ -13,7 +13,7 @@ Omics to Art 是一个浏览器优先的开源网页应用，把 NCBI Gene Expre
 - raw counts 的库大小校正与 `log2(CPM + 1)` 视觉变换
 - 本地 CSV / TSV / TXT / gzip；本地文件不上传
 - 10 种艺术模板：Expression Constellation、Transcriptome Weave、Differential Bloom、Sample Fingerprint、Radial Pulse、Matrix Mosaic、Flow Field、Gene Orbit 3D、Expression Terrain 3D、Differential Nebula
-- 样本筛选、基因搜索与高亮、主题、seed、输出尺寸和图例
+- 样本筛选、基因搜索与高亮、主题、seed、输出尺寸和图例；当前页面最多使用 100 个样本列、5,000 个艺术基因
 - PNG、SVG、manifest.json、README.txt 和无依赖 ZIP 作品包
 - GEO 分享链接会恢复源文件、样本选择、模板参数与随机种子；所有链接参数均经过白名单、长度和资源上限校验
 - 交互玩法：随机构图、自动漫游、随机基因发现、点击锁定基因、全屏画布、本地收藏预设，以及 3D 拖拽或方向键旋转、滚轮或 +/- 缩放（0 重置相机）
@@ -67,6 +67,8 @@ Vite 会把 `/api` 转发到 `127.0.0.1:8787`。
 
 ## 部署
 
+对外版本以 GitHub Release 为准；应用版本由项目依赖清单维护，发布时同步更新。作品清单自动记录应用版本；模板机制版本独立演进。
+
 先在 Cloudflare 中创建 Worker secrets：
 
 ```bash
@@ -82,6 +84,8 @@ npm run deploy
 ```
 
 `wrangler.jsonc` 使用 Workers Static Assets，将 `apps/web/dist` 与 `worker/src/index.ts` 一次发布。
+
+工作台先在导入的全部样本列上处理缺失值，再允许选择样本子集；切换样本不会重新纳入导入时排除的基因。各模板有各自的绘制数量上限，数据护照及作品清单记录实际参与绘制的基因，定位和随机发现也只在当前作品中进行。
 
 ## 数据格式
 

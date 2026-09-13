@@ -26,7 +26,7 @@
 | Reproducible GEO share link | Validated state codec in `apps/web/src/share-state.ts`; restoration and UI in `apps/web/src/App.tsx` |
 | Security headers and CSP | `apps/web/public/_headers` |
 | Health, diagnostics and operations | `/api/health`, diagnostic IDs, `docs/operations.md` |
-| Unit and browser tests | `tests`, `e2e`, `.github/workflows/ci.yml` |
+| Unit and browser tests | `tests/`, `e2e/`, `npm run check`, `npm run test:e2e`; Cloudflare Git integration builds are separate from local test evidence |
 
 ## Acceptance work that remains deployment-specific
 

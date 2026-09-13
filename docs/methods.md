@@ -24,11 +24,11 @@ For local or submitter-provided matrices whose unit cannot be established from t
 
 ## Missing values
 
-Empty strings, `NA`, `N/A`, `NaN`, `null`, and `.` are missing. A row with more than 30% missing selected sample values is excluded. Remaining missing entries do not contribute to statistics and are replaced by the selected row mean only for final visual geometry.
+Empty strings, `NA`, `N/A`, `NaN`, `null`, and `.` are missing. Before Studio sample selection, a row with more than 30% missing values across the imported sample columns (at most the first 100) is excluded. Remaining missing entries do not contribute to import statistics and are filled with that imported row mean for visual geometry. Selecting a subset later recalculates its visual statistics and ranks; it does not restore excluded genes, repeat missing-value filtering, or re-impute values.
 
 ## Reproducibility
 
-A template receives a deterministic seed derived from dataset ID, source file, selected sample IDs, template ID and user seed. Exported manifests record source file, selected samples, transform, filters, template version, theme and seed.
+Seeded templates use deterministic seeds. Expression Constellation includes dataset ID, source file, selected sample IDs, template ID and user seed; Flow Field, Gene Orbit 3D and Differential Nebula use dataset ID, template ID and user seed. Other templates use deterministic feature order without random layout. Exported manifests record source file, selected samples, transform, filters, template version, theme and seed.
 
 Determinism is guaranteed for a fixed application release and renderer implementation. Share-state sanitization intentionally upgrades `templateVersion` to the renderer bundled with the current application; therefore, a link opened by a later release cannot by itself reproduce an older renderer byte-for-byte. Long-term audit-grade replay should archive the manifest together with the application release or source commit that produced it.
 
@@ -44,3 +44,24 @@ Differential Bloom v1.1.1 encodes up-regulation in the right hemisphere and down
 ## Resource boundaries
 
 The source stream is capped at 300 MB, decompressed bytes at 1 GB, and an individual text line at 16 MB. Share-link state is schema-sanitized and canvas area is capped before rendering. These limits are safety boundaries, not claims that every device can process files near the maximum.
+
+Parser provenance records the effective sample and feature limits after integer conversion and bounds, alongside actual selected counts. It does not report an oversized caller request as the applied processing limit.
+
+## Rendered feature count
+
+Each template retains its own bounded prefix of the selected features. Data Passport and the manifest rendering block report this actual set and count; the requested gene count remains a composition parameter. Gene lookup and random discovery use only that rendered set.
+
+The count describes distinct participating features, not the number of SVG elements, sample lines, rings, links, or hit targets. All ten geometry preparations are checked against the same exported feature set at both 501 and 5,000 requested features.
+
+| Template | Feature cap | Participating-feature evidence |
+| --- | ---: | --- |
+| Expression Constellation | Requested count (Studio maximum 5,000) | One feature per star |
+| Transcriptome Weave | 2,400 | The feature array and one point per feature in each sample line |
+| Differential Bloom | 1,600 | One feature per petal |
+| Sample Fingerprint | 3,000 | Distinct features across all ring segments, not the ring count |
+| Radial Pulse | 2,600 | One feature per ray |
+| Matrix Mosaic | 3,200 | One feature per tile |
+| Flow Field | 1,800 | One feature per ribbon |
+| Gene Orbit 3D | 2,600 | Distinct features in depth-sorted points, not links |
+| Expression Terrain 3D | 2,304 | All grid vertices; separate dots and hit targets may be subsampled |
+| Differential Nebula | 2,400 | One feature per point, even when a point draws a halo and a core |

@@ -130,7 +130,8 @@ export function tableToVisualDataset(table: ParsedTable, options: ParseOptions):
 }
 
 function expressionToDataset(table: ParsedTable, options: ParseOptions, unit: DataUnit): VisualDataset {
-  const maxSamples = Math.max(1, options.maxSamples ?? 100);
+  const maxFeatures = resolveMaxFeatures(options.maxFeatures);
+  const maxSamples = Math.min(100, Math.max(1, Math.trunc(options.maxSamples ?? 100)));
   const sampleHeaders = table.header.slice(1, maxSamples + 1);
   if (sampleHeaders.length === 0) throw new Error("The matrix does not contain sample columns.");
   const samples: VisualSample[] = sampleHeaders.map((id) => ({ id: stripQuotes(id), title: stripQuotes(id) }));
@@ -209,7 +210,7 @@ function expressionToDataset(table: ParsedTable, options: ParseOptions, unit: Da
 
   assignRanks(features, "mean", "expressionRank");
   assignRanks(features, "variance", "varianceRank");
-  const selected = selectTopFeatures(features, options);
+  const selected = selectTopFeatures(features, { ...options, maxFeatures });
   const transform = unit === "raw-count"
     ? "library-size normalization → log2(CPM + 1)"
     : unit === "microarray-value" || unit === "unknown"
@@ -236,7 +237,7 @@ function expressionToDataset(table: ParsedTable, options: ParseOptions, unit: Da
       filtering: {
         maximumMissingRate: 0.3,
         maximumSamples: maxSamples,
-        maximumFeatures: options.maxFeatures ?? 5000,
+        maximumFeatures: maxFeatures,
       },
       missingValuePolicy: "Missing values are excluded from row statistics and represented by row means in visual geometry.",
       selectedFeatures: selected.length,
@@ -284,7 +285,7 @@ function differentialToDataset(table: ParsedTable, options: ParseOptions): Visua
       varianceRank: 0,
       values: [fc],
       log2FoldChange: fc,
-      padj: safeSignificance,
+      padj: significance,
       significanceKind,
       baseMean,
     });
@@ -292,7 +293,8 @@ function differentialToDataset(table: ParsedTable, options: ParseOptions): Visua
   assignRanks(features, "mean", "expressionRank");
   assignRanks(features, "variance", "varianceRank");
   features.sort((a, b) => (a.padj ?? 1) - (b.padj ?? 1) || Math.abs(b.log2FoldChange ?? 0) - Math.abs(a.log2FoldChange ?? 0) || a.id.localeCompare(b.id));
-  const selected = features.slice(0, Math.min(10_000, Math.max(10, options.maxFeatures ?? 3000)));
+  const maxFeatures = resolveMaxFeatures(options.maxFeatures);
+  const selected = features.slice(0, maxFeatures);
   const significanceLabel = significanceKind === "adjusted-p-value" ? "adjusted P value" : "raw P value";
   return {
     id: options.source.sourceFile ?? "local-differential-result",
@@ -312,7 +314,7 @@ function differentialToDataset(table: ParsedTable, options: ParseOptions): Visua
     },
     provenance: {
       transform: "投稿者提供的差异统计",
-      filtering: { maximumFeatures: options.maxFeatures ?? 3000, significanceField: table.header[significanceIndex] ?? significanceLabel },
+      filtering: { maximumFeatures: maxFeatures, significanceField: table.header[significanceIndex] ?? significanceLabel },
       missingValuePolicy: "Rows missing gene, log2FoldChange or p-value fields are excluded.",
       selectedFeatures: selected.length,
       selectedSamples: 1,
@@ -334,9 +336,13 @@ function findFirst(values: string[], choices: string[]): number {
   return -1;
 }
 
+function resolveMaxFeatures(requested?: number): number {
+  return Math.min(10_000, Math.max(10, Math.trunc(requested ?? 5000)));
+}
+
 function selectTopFeatures(features: VisualFeature[], options: ParseOptions): VisualFeature[] {
   const ranking = options.ranking ?? "balanced";
-  const max = Math.min(Math.max(10, options.maxFeatures ?? 5000), 10_000);
+  const max = resolveMaxFeatures(options.maxFeatures);
   const seed = options.seed ?? 184726;
   const scored = features.map((feature) => {
     let score: number;

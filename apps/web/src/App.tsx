@@ -13,7 +13,7 @@ import {
   type VisualDataset,
   type VisualFeature,
 } from "@omics-to-art/shared";
-import { templateRegistry, templates } from "@omics-to-art/templates";
+import { getArtworkFeatures, templateRegistry, templates } from "@omics-to-art/templates";
 import { ApiError, fetchFiles } from "./api";
 import { canvasToBlob, copyText, createZip, downloadBlob, manifestReadme } from "./export";
 import { SOURCE_FILE_HARD_LIMIT_BYTES, SOURCE_FILE_WARNING_BYTES } from "./limits";
@@ -302,6 +302,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
   const effectiveTemplate = template.supports(activeDataset) ? template : availableTemplates[0] ?? templateRegistry["expression-constellation"];
   const effectiveConfig = effectiveTemplate.id === config.template ? config : { ...config, template: effectiveTemplate.id, templateVersion: effectiveTemplate.version };
   const artwork = useMemo(() => effectiveTemplate.prepare(activeDataset, effectiveConfig), [activeDataset, effectiveTemplate, effectiveConfig]);
+  const renderedFeatures = useMemo(() => getArtworkFeatures(activeDataset, effectiveConfig), [activeDataset, effectiveConfig]);
   const is3d = effectiveTemplate.dimension === "3d";
   const is3dRef = useRef(is3d);
   is3dRef.current = is3d;
@@ -325,13 +326,13 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
   const selectTemplate = (id: TemplateId): void => updateConfig({ template: id, templateVersion: templateRegistry[id].version });
   const highlightGene = (): void => {
     const query = geneQuery.trim().toUpperCase();
-    const match = activeDataset.features.find((feature) => feature.id.toUpperCase() === query || feature.symbol?.toUpperCase() === query);
-    if (!match) { showToast("当前数据中没有找到该基因"); return; }
+    const match = renderedFeatures.find((feature) => feature.id.toUpperCase() === query || feature.symbol?.toUpperCase() === query);
+    if (!match) { showToast("当前构图中没有找到该基因，请调整基因数量或模板"); return; }
     updateConfig({ highlightedGene: match.id });
     setHovered(match);
   };
   const randomGene = (): void => {
-    const pool = activeDataset.features.slice(0, Math.min(activeDataset.features.length, Math.max(50, effectiveConfig.geneCount)));
+    const pool = renderedFeatures;
     const match = pool[Math.floor(Math.random() * pool.length)];
     if (!match) return;
     setGeneQuery(match.symbol ?? match.id);
@@ -477,6 +478,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
     dataset: { id: activeDataset.id, title: activeDataset.title, source: activeDataset.source, samples: activeDataset.samples.map((sample) => sample.id), unit: activeDataset.summary.unit },
     processing: activeDataset.provenance,
     artwork: effectiveConfig,
+    rendering: { featureCount: renderedFeatures.length, featureIds: renderedFeatures.map((feature) => feature.id) },
     generatedAt: new Date().toISOString(),
     disclaimer: SCIENTIFIC_DISCLAIMER,
   });
@@ -518,7 +520,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
         <Panel title="玩法"><div className="play-grid"><button onClick={surprise}>✦ 随机构图</button><button className={touring?"active":""} onClick={()=>setTouring((value)=>!value)}>{touring?"■ 停止漫游":"▶ 自动漫游"}</button><button onClick={randomGene}>⌁ 随机基因</button><button onClick={savePreset}>☆ 收藏预设</button></div><p className="shortcut-hint">快捷键：R 随机 · G 基因 · F 全屏 · Space 漫游</p></Panel>
         <Panel title={`艺术模板 · ${availableTemplates.length}`}><div className="template-list">{templates.slice().sort((a,b)=>Number(b.supports(activeDataset))-Number(a.supports(activeDataset))).map((item) => <button key={item.id} disabled={!item.supports(activeDataset)} className={effectiveTemplate.id===item.id?"active":""} onClick={()=>selectTemplate(item.id)}><span className="template-title"><strong>{item.name}</strong>{item.dimension==="3d"&&<em>3D</em>}</span><span>{item.description ?? item.id}</span></button>)}</div></Panel>
         <Panel title="构图参数">
-          <Control label={`基因数量 · ${effectiveConfig.geneCount.toLocaleString()}`}><input type="range" min="1" max={Math.max(1, Math.min(5000, activeDataset.features.length))} step={activeDataset.features.length < 100 ? 1 : 100} value={Math.max(1, Math.min(effectiveConfig.geneCount, activeDataset.features.length))} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({geneCount:Number(event.currentTarget.value)})}/></Control>
+          <Control label={`请求基因数 · ${effectiveConfig.geneCount.toLocaleString()}`}><input type="range" min="1" max={Math.max(1, Math.min(5000, activeDataset.features.length))} step={activeDataset.features.length < 100 ? 1 : 100} value={Math.max(1, Math.min(effectiveConfig.geneCount, activeDataset.features.length))} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({geneCount:Number(event.currentTarget.value)})}/></Control>
           {effectiveTemplate.usesDensity&&<Control label={`密度 · ${effectiveConfig.density.toFixed(1)}`}><input type="range" min="0.5" max="1.6" step="0.1" value={effectiveConfig.density} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({density:Number(event.currentTarget.value)})}/></Control>}
           {effectiveTemplate.usesSeed&&<Control label="随机种子"><div className="inline-control"><input type="number" value={effectiveConfig.seed} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>updateConfig({seed:Math.min(0xffffffff,Math.max(1,Math.trunc(Number(event.currentTarget.value)||1)))})}/><button onClick={()=>updateConfig({seed:Math.floor(Math.random()*0xffffffff)||1})}>重新构图</button></div></Control>}
           <Control label="主题"><select value={effectiveConfig.theme} onChange={(event: React.ChangeEvent<HTMLSelectElement>)=>updateConfig({theme:event.currentTarget.value as ArtworkConfig["theme"]})}><option value="dark-observatory">暗夜天文台</option><option value="paper-ink">纸墨</option><option value="fluorescence">荧光</option><option value="solar-flare">日耀</option><option value="ice-glass">冰晶玻璃</option><option value="violet-night">紫夜</option></select></Control>
@@ -544,7 +546,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
       </section>
       <aside className="control-panel right-panel">
         <Panel title="数据护照"><Passport dataset={activeDataset} config={effectiveConfig}/></Panel>
-        {activeDataset.samples.length>1&&<Panel title={`样本选择 · ${selectedSamples.size}/${dataset.samples.length}`}><div className="sample-list"><button className="text-button" onClick={()=>setSelectedSamples(new Set(dataset.samples.map(s=>s.id)))}>全选</button>{dataset.samples.map((sample)=><label key={sample.id}><input type="checkbox" checked={selectedSamples.has(sample.id)} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>setSelectedSamples(current=>{const next=new Set(current);if(event.currentTarget.checked)next.add(sample.id);else if(next.size>1)next.delete(sample.id);return next;})}/><span>{sample.title}</span></label>)}</div></Panel>}
+        {dataset.samples.length>1&&<Panel title={`样本选择 · ${selectedSamples.size}/${dataset.samples.length}`}><div className="sample-list"><button className="text-button" onClick={()=>setSelectedSamples(new Set(dataset.samples.map(s=>s.id)))}>全选</button>{dataset.samples.map((sample)=><label key={sample.id}><input type="checkbox" checked={selectedSamples.has(sample.id)} onChange={(event: React.ChangeEvent<HTMLInputElement>)=>{const checked=event.currentTarget.checked;setSelectedSamples(current=>{const next=new Set(current);if(checked)next.add(sample.id);else if(next.size>1)next.delete(sample.id);return next;});}}/><span>{sample.title}</span></label>)}</div></Panel>}
         <Panel title="映射图例"><div className="legend-list">{artwork.legend.map((item)=><div key={item.technical}><strong>{item.label}</strong><code>{item.technical}</code></div>)}</div></Panel>
         <Panel title="导出"><div className="export-grid"><button onClick={()=>void exportPng()}>PNG</button><button onClick={exportSvg}>SVG</button><button onClick={exportManifest}>清单</button><button onClick={()=>void exportBundle()}>ZIP 全套</button></div></Panel>
         <div className="disclaimer">{SCIENTIFIC_DISCLAIMER}</div>
@@ -554,7 +556,7 @@ function Studio({ dataset, onBack }: { dataset: VisualDataset; onBack: () => voi
 }
 function Passport({ dataset, config }: { dataset: VisualDataset; config: ArtworkConfig }): React.JSX.Element {
   const UNIT_LABELS: Record<string, string> = { "differential-result": "差异结果", "expression-matrix": "表达矩阵", "raw-count": "原始计数", "microarray-value": "芯片信号值", unknown: "未知单位" };
-  const items=[['来源',dataset.source.accession??dataset.source.sourceFile??dataset.source.type],['数据类型',UNIT_LABELS[dataset.summary.unit] ?? dataset.summary.unit],['源基因数',dataset.summary.originalFeatureCount.toLocaleString()],['有效基因数',dataset.summary.validFeatureCount.toLocaleString()],['艺术基因数',Math.min(config.geneCount,dataset.features.length).toLocaleString()],['样本数',dataset.samples.length.toString()],['缺失率',`${(dataset.summary.missingRate*100).toFixed(2)}%`],['变换',dataset.summary.transform],['模板',`${config.template} ${config.templateVersion}`],['随机种子',String(config.seed)]];
+  const items=[['来源',dataset.source.accession??dataset.source.sourceFile??dataset.source.type],['数据类型',UNIT_LABELS[dataset.summary.unit] ?? dataset.summary.unit],['源基因数',dataset.summary.originalFeatureCount.toLocaleString()],['有效基因数',dataset.summary.validFeatureCount.toLocaleString()],['艺术基因数',getArtworkFeatures(dataset,config).length.toLocaleString()],['样本数',dataset.samples.length.toString()],['缺失率',`${(dataset.summary.missingRate*100).toFixed(2)}%`],['变换',dataset.summary.transform],['模板',`${config.template} ${config.templateVersion}`],['随机种子',String(config.seed)]];
   return <dl className="passport">{items.map(([label,value])=><div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
 }
 function Panel({title,children}:{title:string;children:React.ReactNode}):React.JSX.Element{
@@ -572,7 +574,7 @@ function Footer():React.JSX.Element{return <footer><span>组学艺术 · 开源 
 
 function DocumentPage({kind}:{kind:"methods"|"privacy"|"about"}):React.JSX.Element{
   const content={
-    methods:{title:"数据与视觉方法",intro:"系统将数据处理和艺术表现严格分层。模板只读取缩减后的 VisualDataset，不直接解释 GEO 原始文本。",sections:[['数据入口','正式支持人类 NCBI-generated TPM / FPKM / raw counts、microarray Series Matrix，以及本地 CSV / TSV / gzip。FASTQ、BAM、H5AD、10x 和服务端差异分析不在首版范围。'],['表达变换','TPM / FPKM 默认使用 log2(value + 1)。raw counts 先按样本库大小转换为 CPM，再使用 log2(CPM + 1)。microarray 默认保留投稿者提供值，不擅自执行复杂归一化。'],['流式选择','浏览器 Web Worker 逐行解压和解析，不构建完整对象矩阵。候选池基于表达、方差和完整率，再对候选特征计算百分位排名，默认最多用于艺术引擎 5,000 个基因。'],['可复现性','数据集、样本选择、模板版本、参数和随机种子共同决定构图。导出的 manifest.json 记录全部必要信息。'],['科学边界',SCIENTIFIC_DISCLAIMER]]},
+    methods:{title:"数据与视觉方法",intro:"系统将数据处理和艺术表现严格分层。模板只读取缩减后的 VisualDataset，不直接解释 GEO 原始文本。",sections:[['数据入口','正式支持人类 NCBI-generated TPM / FPKM / raw counts、microarray Series Matrix，以及本地 CSV / TSV / gzip。FASTQ、BAM、H5AD、10x 和服务端差异分析不在首版范围。'],['表达变换','TPM / FPKM 默认使用 log2(value + 1)。raw counts 先按样本库大小转换为 CPM，再使用 log2(CPM + 1)。microarray 默认保留投稿者提供值，不擅自执行复杂归一化。'],['流式选择','浏览器 Web Worker 逐行解压和解析，不构建完整对象矩阵。候选池基于表达、方差和完整率，再对候选特征计算百分位排名，默认最多用于艺术引擎 5,000 个基因。缺失筛选和填补先在导入的全部样本列上完成，工作台选择样本子集不会重做筛选；数据护照显示当前模板实际采用的艺术基因数。'],['可复现性','数据集、样本选择、模板版本、参数和随机种子共同决定构图。导出的 manifest.json 记录全部必要信息。'],['科学边界',SCIENTIFIC_DISCLAIMER]]},
     privacy:{title:"隐私说明",intro:"本地上传文件只在你的浏览器中处理。",sections:[['本地文件','文件不会发送到 Worker，不写入日志，不保存到 Cloudflare，不用于训练或分析。刷新页面后不会自动恢复原文件。'],['公开 GEO 数据','Worker 仅代理 NCBI 官方公开文件，并使用短时签名令牌、防开放代理白名单和重定向校验。'],['日志','仅记录接口、状态码、响应时间、accession、错误类型和应用版本；不记录表达矩阵、上传内容或 URL hash 参数。'],['缓存','公开 GEO 元数据和文件候选可在边缘缓存；大型矩阵不进入应用持久化存储。']]},
     about:{title:"关于组学艺术",intro:"输入一个 GEO 编号，把真实的组学数据变成一幅可以解释、可以复现、可以分享的艺术作品。",sections:[['定位','它比纯科研绘图工具更有趣，比随机艺术生成器更严谨，比完整生信平台更轻量。'],['不是分析平台','它不替代 GEO2R、DESeq2、limma、临床诊断或论文结论验证。'],['开放设计','核心代码采用 MIT License；模板接口、数据结构和映射规则公开，便于贡献新的视觉语言。'],['技术架构','React + TypeScript + Cloudflare Workers Static Assets。Worker 负责 GEO 元数据、文件发现和安全流式代理，浏览器负责解压、解析、统计与渲染。']]}
   }[kind];

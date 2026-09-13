@@ -41,6 +41,7 @@ Required: gene identifier, `log2FoldChange`/`log2FC`/`logFC`, and either adjuste
 - Decompressed stream hard limit: 1 GB
 - Single text-line hard limit: 16 MB
 - Default maximum sample columns: 100
-- Maximum art features: 10,000
+- Current UI: at most 5,000 art features.
+- Processing engine: 5,000 features by default; configurable maxFeatures hard limit of 10,000. This does not make 10,000 features available through the current UI.
 - Raw-count candidate rows at the default output setting: up to 60,000 using `Float32Array`
 - Negative raw counts are warned and treated as zero only for the CPM visual transform

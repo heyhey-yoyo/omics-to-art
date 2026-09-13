@@ -49,3 +49,31 @@ test('saved composition survives reload; denied storage keeps existing presets',
   await expect(page.locator('body')).toContainText('浏览器无法保存收藏');
   expect(await page.evaluate(() => localStorage.getItem('omics-to-art-presets-v1'))).toBe(stored);
 });
+
+test('one selected sample keeps the chooser and can return to all samples', async ({page})=>{
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles(resolve('fixtures/matrices/expression.csv'));
+  await expect(page.locator('.sample-list')).toBeVisible();
+  const boxes=page.locator('.sample-list input');
+  for(let i=1;i<await boxes.count();i++)await boxes.nth(i).uncheck();
+  await expect(page.locator('.sample-list')).toBeVisible();
+  expect((JSON.parse((await bytes(page,'清单')).toString())).dataset.samples).toHaveLength(1);
+  await page.getByRole('button',{name:'全选',exact:true}).click();
+  const manifest=JSON.parse((await bytes(page,'清单')).toString());
+  expect(manifest.dataset.samples).toHaveLength(4);
+  expect(manifest.rendering.featureIds).toHaveLength(manifest.rendering.featureCount);
+});
+
+test('passport and export report capped rendered genes and random discovery stays in that set', async ({page})=>{
+  const data='gene,s1,s2\n'+Array.from({length:2000},(_,i)=>`g${i},${i+1},${i+2}`).join('\n');
+  await page.goto('/');
+  await page.locator('input[type=file]').setInputFiles({name:'rendered.csv',mimeType:'text/csv',buffer:Buffer.from(data)});
+  await page.getByRole('button',{name:/^流场/}).click();
+  await page.locator('.left-panel input[type=range]').first().focus();
+  await page.keyboard.press('End');
+  await expect(page.locator('.passport')).toContainText('1,800');
+  await page.getByRole('button',{name:'随机发现',exact:true}).click();
+  const manifest=JSON.parse((await bytes(page,'清单')).toString());
+  expect(manifest.rendering.featureCount).toBe(1800);
+  expect(manifest.rendering.featureIds).toContain(manifest.artwork.highlightedGene);
+});

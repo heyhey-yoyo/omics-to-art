@@ -38,7 +38,7 @@ const constellation: ArtTemplate = {
   supportsLabels: true,
   supports: (data) => data.summary.unit !== "differential-result",
   prepare(data, config) {
-    const features = data.features.slice(0, config.geneCount);
+    const features = getArtworkFeatures(data, config);
     const sampleKey = data.samples.map((sample) => sample.id).join("|");
     const rng = new SeededRandom(stableSeed(data.id, data.source.sourceFile ?? "", sampleKey, config.template, config.seed));
     const pad = Math.min(config.width, config.height) * 0.12;
@@ -126,7 +126,7 @@ const weave: ArtTemplate = {
   description: "多样本表达谱交织成连续的数据丝线。",
   supports: (data) => data.summary.unit !== "differential-result" && data.samples.length >= 2,
   prepare(data, config) {
-    const features = data.features.slice(0, Math.min(config.geneCount, 2400));
+    const features = getArtworkFeatures(data, config);
     let min = Number.POSITIVE_INFINITY;
     let max = Number.NEGATIVE_INFINITY;
     for (const feature of features) {
@@ -217,7 +217,7 @@ const bloom: ArtTemplate = {
   description: "上调与下调在花朵两侧展开，显著性控制透明度。",
   supports: (data) => data.summary.unit === "differential-result",
   prepare(data, config) {
-    const features = data.features.slice(0, Math.min(config.geneCount, 1600));
+    const features = getArtworkFeatures(data, config);
     const maxFc = Math.max(1, ...features.map((feature) => Math.abs(feature.log2FoldChange ?? 0)));
     const maxBase = Math.max(1, ...features.map((feature) => Math.log2((feature.baseMean ?? 0) + 1)));
     const upCount = Math.max(1, features.filter((feature) => (feature.log2FoldChange ?? 0) >= 0).length);
@@ -281,7 +281,7 @@ const fingerprint: ArtTemplate = {
   description:"用同心纹理生成独一无二的样本数据指纹。",
   supports:(data)=>data.summary.unit!=="differential-result",
   prepare(data,config){
-    const features=data.features.slice(0,Math.min(config.geneCount,3000)); const ringCount=14; const cx=config.width/2,cy=config.height/2+12; const maxR=Math.min(config.width,config.height)*.37;
+    const features=getArtworkFeatures(data, config); const ringCount=14; const cx=config.width/2,cy=config.height/2+12; const maxR=Math.min(config.width,config.height)*.37;
     const rings=Array.from({length:ringCount},(_,ringIndex)=>{ const group=features.filter((_,i)=>i%ringCount===ringIndex); return { radius:maxR*(.16+.84*(ringIndex+1)/ringCount), segments:group.map((feature,index)=>{ const start=index/Math.max(1,group.length)*Math.PI*2; const end=start+Math.PI*2/Math.max(1,group.length)*.82; return {start,end,width:.6+feature.expressionRank*5,opacity:.18+feature.stability*.82,color:ringIndex%3===0?THEMES[config.theme].accent:ringIndex%3===1?THEMES[config.theme].accent2:THEMES[config.theme].accent3,feature}; })}; });
     const hitRegions=rings.flatMap(r=>r.segments.slice(0,30).map(s=>({x:cx+Math.cos((s.start+s.end)/2)*r.radius,y:cy+Math.sin((s.start+s.end)/2)*r.radius,radius:Math.max(5,s.width),feature:s.feature})));
     return buildArtwork(data,config,{rings,cx,cy},hitRegions,[{label:"每条纹理 = 一个固定基因区间",technical:"angular order = deterministic feature order"},{label:"条纹厚度 = 表达百分位",technical:"stroke width = expression rank"},{label:"条纹透明度 = 样本间稳定性",technical:"opacity = stability"}]);
@@ -300,7 +300,7 @@ const radialPulse: ArtTemplate = {
   description: "把表达量变成放射脉冲，像一张数据唱片。",
   supports: () => true,
   prepare(data, config) {
-    const features = data.features.slice(0, Math.min(config.geneCount, 2600));
+    const features = getArtworkFeatures(data, config);
     const cx = config.width / 2;
     const cy = config.height / 2 + 12;
     const base = Math.min(config.width, config.height) * .13;
@@ -358,7 +358,7 @@ const matrixMosaic: ArtTemplate = {
   description: "把基因压缩成一面可探索的数据马赛克。",
   supports: () => true,
   prepare(data, config) {
-    const features = data.features.slice(0, Math.min(config.geneCount, 3200));
+    const features = getArtworkFeatures(data, config);
     const cols = Math.max(4, Math.ceil(Math.sqrt(features.length * config.width / config.height)));
     const rows = Math.max(1, Math.ceil(features.length / cols));
     const left = 54, right = config.width - 54, top = 112, bottom = config.height - 96;
@@ -387,7 +387,7 @@ const flowField: ArtTemplate = {
   usesDensity: true,
   supports: () => true,
   prepare(data, config) {
-    const features=data.features.slice(0,Math.min(config.geneCount,1800));const rng=new SeededRandom(stableSeed(data.id,config.template,config.seed));const left=50,right=config.width-50,top=105,bottom=config.height-92;
+    const features=getArtworkFeatures(data, config);const rng=new SeededRandom(stableSeed(data.id,config.template,config.seed));const left=50,right=config.width-50,top=105,bottom=config.height-92;
     const ribbons=features.map((feature,index)=>{const x=left+rng.next()*(right-left),y=top+rng.next()*(bottom-top);const angle=(feature.expressionRank-.5)*Math.PI*1.35+(rng.next()-.5)*.7;const len=(25+feature.expressionRank*110)*config.density;const bend=(feature.varianceRank-.5)*90;const dx=Math.cos(angle)*len,dy=Math.sin(angle)*len;const nx=-Math.sin(angle),ny=Math.cos(angle);const color=feature.log2FoldChange!==undefined?((feature.log2FoldChange??0)>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent):(index%3===0?THEMES[config.theme].accent:index%3===1?THEMES[config.theme].accent2:THEMES[config.theme].accent3);return{start:[x,y] as [number,number],cp1:[x+dx*.32+nx*bend,y+dy*.32+ny*bend] as [number,number],cp2:[x+dx*.68-nx*bend*.45,y+dy*.68-ny*bend*.45] as [number,number],end:[x+dx,y+dy] as [number,number],width:.45+feature.expressionRank*3.1,opacity:.10+feature.stability*.48,color,feature};});
     const hitRegions=ribbons.filter((_,i)=>i%Math.max(1,Math.floor(ribbons.length/350))===0).map(r=>({x:r.end[0],y:r.end[1],radius:Math.max(7,r.width*2),feature:r.feature}));
     return buildArtwork(data,config,{ribbons},hitRegions,[{label:"丝带长度 = 表达百分位",technical:"curve length = expression rank"},{label:"弯曲程度 = 变化排名",technical:"curvature = variance rank"},{label:"透明度 = 稳定性",technical:"opacity = stability"}]);
@@ -408,7 +408,7 @@ const geneOrbit3d: ArtTemplate = {
   usesSeed: true,
   supports: () => true,
   prepare(data, config) {
-    const features=data.features.slice(0,Math.min(config.geneCount,2600));const rng=new SeededRandom(stableSeed(data.id,config.template,config.seed));const raw=features.map((feature,index)=>{const t=(index+.5)/Math.max(1,features.length);const phi=Math.acos(1-2*t);const theta=Math.PI*(1+Math.sqrt(5))*index+rng.range(-.08,.08);const radial=.56+.44*feature.expressionRank;const x=Math.sin(phi)*Math.cos(theta)*radial,y=Math.cos(phi)*radial,z=Math.sin(phi)*Math.sin(theta)*radial;const p=projectPoint3d(x,y,z,config);const color=feature.log2FoldChange!==undefined?((feature.log2FoldChange??0)>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent):(index%3===0?THEMES[config.theme].accent:index%3===1?THEMES[config.theme].accent2:THEMES[config.theme].accent3);return{...p,radius:1.2+feature.varianceRank*5.2,opacity:.24+feature.stability*.7,color,feature,sourceIndex:index};});
+    const features=getArtworkFeatures(data, config);const rng=new SeededRandom(stableSeed(data.id,config.template,config.seed));const raw=features.map((feature,index)=>{const t=(index+.5)/Math.max(1,features.length);const phi=Math.acos(1-2*t);const theta=Math.PI*(1+Math.sqrt(5))*index+rng.range(-.08,.08);const radial=.56+.44*feature.expressionRank;const x=Math.sin(phi)*Math.cos(theta)*radial,y=Math.cos(phi)*radial,z=Math.sin(phi)*Math.sin(theta)*radial;const p=projectPoint3d(x,y,z,config);const color=feature.log2FoldChange!==undefined?((feature.log2FoldChange??0)>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent):(index%3===0?THEMES[config.theme].accent:index%3===1?THEMES[config.theme].accent2:THEMES[config.theme].accent3);return{...p,radius:1.2+feature.varianceRank*5.2,opacity:.24+feature.stability*.7,color,feature,sourceIndex:index};});
     const rawLinks:Array<[number,number]>=[];for(let i=1;i<Math.min(raw.length,240);i++){if(rng.next()<.27)rawLinks.push([i-1,i]);}
     const points=[...raw].sort((a,b)=>a.depth-b.depth);const sortedIndex=new Map(points.map((point,index)=>[point.sourceIndex,index]));const links=rawLinks.flatMap(([a,b])=>{const one=sortedIndex.get(a),two=sortedIndex.get(b);return one===undefined||two===undefined?[]:[[one,two] as [number,number]];});
     const hitRegions=points.filter((_,i)=>i%Math.max(1,Math.floor(points.length/420))===0).map(point=>({x:point.x,y:point.y,radius:Math.max(7,point.radius*point.scale+4),feature:point.feature}));
@@ -427,7 +427,7 @@ const expressionTerrain3d: ArtTemplate = {
   dimension: "3d",
   description: "把表达谱抬升成一片可旋转的数据山脉。",
   supports: () => true,
-  prepare(data,config){const features=data.features.slice(0,Math.min(config.geneCount,2304));const cols=Math.max(4,Math.ceil(Math.sqrt(features.length))),rows=Math.max(1,Math.ceil(features.length/cols));const points=features.map((feature,index)=>{const col=index%cols,row=Math.floor(index/cols);const x=cols<=1?0:(col/(cols-1)-.5)*1.8,z=rows<=1?0:(row/(rows-1)-.5)*1.8;const signal=data.summary.unit==="differential-result"?clamp(Math.abs(feature.log2FoldChange??0)/4):feature.expressionRank;const y=(signal-.18)*1.15;const p=projectPoint3d(x,y,z,config);const color=feature.log2FoldChange!==undefined?((feature.log2FoldChange??0)>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent):(signal>.66?THEMES[config.theme].accent2:signal>.33?THEMES[config.theme].accent3:THEMES[config.theme].accent);return{...p,feature,color,row,col};}).sort((a,b)=>a.depth-b.depth);const stride=Math.max(1,Math.floor(points.length/400));const hitRegions=points.filter((p,i)=>i%stride===0||config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase()).map(p=>({x:p.x,y:p.y,radius:7,feature:p.feature}));return buildArtwork(data,config,{points,rows,cols},hitRegions,[{label:"山体高度 = 表达强度 / |log2FC|",technical:"height = normalized signal"},{label:"网格顺序 = 固定基因排序",technical:"x/z = deterministic feature grid"},{label:"拖拽旋转 / 滚轮缩放",technical:"camera parameters are stored in preset/share state"}]);},
+  prepare(data,config){const features=getArtworkFeatures(data, config);const cols=Math.max(4,Math.ceil(Math.sqrt(features.length))),rows=Math.max(1,Math.ceil(features.length/cols));const points=features.map((feature,index)=>{const col=index%cols,row=Math.floor(index/cols);const x=cols<=1?0:(col/(cols-1)-.5)*1.8,z=rows<=1?0:(row/(rows-1)-.5)*1.8;const signal=data.summary.unit==="differential-result"?clamp(Math.abs(feature.log2FoldChange??0)/4):feature.expressionRank;const y=(signal-.18)*1.15;const p=projectPoint3d(x,y,z,config);const color=feature.log2FoldChange!==undefined?((feature.log2FoldChange??0)>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent):(signal>.66?THEMES[config.theme].accent2:signal>.33?THEMES[config.theme].accent3:THEMES[config.theme].accent);return{...p,feature,color,row,col};}).sort((a,b)=>a.depth-b.depth);const stride=Math.max(1,Math.floor(points.length/400));const hitRegions=points.filter((p,i)=>i%stride===0||config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase()).map(p=>({x:p.x,y:p.y,radius:7,feature:p.feature}));return buildArtwork(data,config,{points,rows,cols},hitRegions,[{label:"山体高度 = 表达强度 / |log2FC|",technical:"height = normalized signal"},{label:"网格顺序 = 固定基因排序",technical:"x/z = deterministic feature grid"},{label:"拖拽旋转 / 滚轮缩放",technical:"camera parameters are stored in preset/share state"}]);},
   renderCanvas(ctx,artwork,config){beginCanvas(ctx,artwork);const g=artwork.geometry as TerrainGeometry;const byCell=new Map<string,TerrainPoint>();for(const p of g.points)byCell.set(`${p.row}:${p.col}`,p);ctx.save();ctx.lineCap="round";for(const p of g.points){const right=byCell.get(`${p.row}:${p.col+1}`),down=byCell.get(`${p.row+1}:${p.col}`);ctx.strokeStyle=hexToRgba(p.color,.18+.28*p.feature.stability);ctx.lineWidth=.65+1.4*p.feature.expressionRank;if(right){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(right.x,right.y);ctx.stroke();}if(down){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(down.x,down.y);ctx.stroke();}}const stride=Math.max(1,Math.floor(g.points.length/700));for(const [index,p] of g.points.entries()){const hi=config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase();if(index%stride!==0&&!hi)continue;const radius=(hi?7:1.6+3*p.feature.expressionRank)*p.scale;ctx.fillStyle=hexToRgba(p.color,hi?1:.38+.55*p.feature.stability);ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);ctx.fill();if(hi){ctx.strokeStyle=artwork.palette.foreground;ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,radius+4,0,Math.PI*2);ctx.stroke();}}ctx.restore();drawFrame(ctx,artwork,config,`template expression terrain 3D v1.0.1 · ${g.points.length} vertices`);},
   renderSvg(artwork,config){const g=artwork.geometry as TerrainGeometry,byCell=new Map<string,TerrainPoint>();for(const p of g.points)byCell.set(`${p.row}:${p.col}`,p);const lines=g.points.flatMap(p=>{const out:string[]=[];for(const n of [byCell.get(`${p.row}:${p.col+1}`),byCell.get(`${p.row+1}:${p.col}`)])if(n)out.push(`<line x1="${p.x.toFixed(2)}" y1="${p.y.toFixed(2)}" x2="${n.x.toFixed(2)}" y2="${n.y.toFixed(2)}" stroke="${p.color}" stroke-opacity="${(.18+.28*p.feature.stability).toFixed(3)}" stroke-width="${(.65+1.4*p.feature.expressionRank).toFixed(2)}"/>`);return out;}).join("");const stride=Math.max(1,Math.floor(g.points.length/700));const pts=g.points.flatMap((p,index)=>{const hi=config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase();if(index%stride!==0&&!hi)return[];const radius=(hi?7:1.6+3*p.feature.expressionRank)*p.scale,opacity=hi?1:.38+.55*p.feature.stability,outline=hi?`<circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${(radius+4).toFixed(2)}" fill="none" stroke="${artwork.palette.foreground}" stroke-width="2"/>`:"";return[`${outline}<circle id="gene-${safeId(p.feature.id)}" cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${p.color}" fill-opacity="${opacity.toFixed(3)}" data-gene="${escapeXml(p.feature.id)}"/>`];}).join("");return wrapSvg(artwork,svgFrame(artwork,config,`template expression terrain 3D v1.0.1 · projected camera view`)+lines+pts);}
 };
@@ -436,7 +436,7 @@ interface NebulaPoint { x:number;y:number;radius:number;opacity:number;color:str
 interface NebulaGeometry { points:NebulaPoint[]; axisX:number; baseY:number }
 const differentialNebula: ArtTemplate = {
   id:"differential-nebula",name: "差异星云",version:"1.0.1",dimension:"2d",description:"把差异结果铺成左右分裂的显著性星云。",usesSeed:true,usesDensity:true,supports:(data)=>data.summary.unit==="differential-result",
-  prepare(data,config){const features=data.features.slice(0,Math.min(config.geneCount,2400));const maxFc=Math.max(1,...features.map(f=>Math.abs(f.log2FoldChange??0))),maxSig=Math.max(1,...features.map(f=>-Math.log10(Math.max(1e-300,f.padj??1)))),maxBase=Math.max(1,Math.log2(Math.max(1,...features.map(f=>(f.baseMean??0)+1))));const left=76,right=config.width-76,top=115,bottom=config.height-100,axisX=(left+right)/2;const rng=new SeededRandom(stableSeed(data.id,config.template,config.seed));const points=features.map(f=>{const fc=f.log2FoldChange??0,sig=-Math.log10(Math.max(1e-300,f.padj??1));const x=axisX+(fc/maxFc)*(right-left)*.43+rng.range(-3,3)*config.density,y=bottom-(sig/maxSig)*(bottom-top),radius=1.6+Math.log2((f.baseMean??0)+1)/maxBase*7;return{x,y,radius,opacity:.22+clamp(sig/Math.max(1,maxSig))*.75,color:fc>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent,feature:f};});return buildArtwork(data,config,{points,axisX,baseY:bottom},points.filter((_,i)=>i%Math.max(1,Math.floor(points.length/450))===0).map(p=>({x:p.x,y:p.y,radius:Math.max(7,p.radius),feature:p.feature})),[{label:"左右位置 = log2 fold change",technical:"x = signed log2FoldChange"},{label:"高度 = 显著性",technical:"y = -log10(padj or pvalue)"},{label:"星体大小 = base mean",technical:"radius = log2(baseMean + 1)"}]);},
+  prepare(data,config){const features=getArtworkFeatures(data, config);const maxFc=Math.max(1,...features.map(f=>Math.abs(f.log2FoldChange??0))),maxSig=Math.max(1,...features.map(f=>-Math.log10(Math.max(1e-300,f.padj??1)))),maxBase=Math.max(1,Math.log2(Math.max(1,...features.map(f=>(f.baseMean??0)+1))));const left=76,right=config.width-76,top=115,bottom=config.height-100,axisX=(left+right)/2;const rng=new SeededRandom(stableSeed(data.id,config.template,config.seed));const points=features.map(f=>{const fc=f.log2FoldChange??0,sig=-Math.log10(Math.max(1e-300,f.padj??1));const x=axisX+(fc/maxFc)*(right-left)*.43+rng.range(-3,3)*config.density,y=bottom-(sig/maxSig)*(bottom-top),radius=1.6+Math.log2((f.baseMean??0)+1)/maxBase*7;return{x,y,radius,opacity:.22+clamp(sig/Math.max(1,maxSig))*.75,color:fc>=0?THEMES[config.theme].accent2:THEMES[config.theme].accent,feature:f};});return buildArtwork(data,config,{points,axisX,baseY:bottom},points.filter((_,i)=>i%Math.max(1,Math.floor(points.length/450))===0).map(p=>({x:p.x,y:p.y,radius:Math.max(7,p.radius),feature:p.feature})),[{label:"左右位置 = log2 fold change",technical:"x = signed log2FoldChange"},{label:"高度 = 显著性",technical:"y = -log10(padj or pvalue)"},{label:"星体大小 = base mean",technical:"radius = log2(baseMean + 1)"}]);},
   renderCanvas(ctx,artwork,config){beginCanvas(ctx,artwork);const g=artwork.geometry as NebulaGeometry;ctx.save();ctx.strokeStyle=hexToRgba(artwork.palette.muted,.15);ctx.setLineDash([5,7]);ctx.beginPath();ctx.moveTo(g.axisX,108);ctx.lineTo(g.axisX,g.baseY);ctx.stroke();ctx.setLineDash([]);for(const p of g.points){const hi=config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase();const halo=p.radius*(2.8+p.feature.varianceRank*2);const grad=ctx.createRadialGradient(p.x,p.y,p.radius,p.x,p.y,halo);grad.addColorStop(0,hexToRgba(p.color,hi ? .35 : .16));grad.addColorStop(1,hexToRgba(p.color,0));ctx.fillStyle=grad;ctx.beginPath();ctx.arc(p.x,p.y,halo,0,Math.PI*2);ctx.fill();ctx.fillStyle=hexToRgba(p.color,hi?1:p.opacity);ctx.beginPath();ctx.arc(p.x,p.y,hi?p.radius*1.8:p.radius,0,Math.PI*2);ctx.fill();}ctx.restore();drawFrame(ctx,artwork,config,"template differential nebula v1.0.1 · supplied statistics");},
   renderSvg(artwork,config){const g=artwork.geometry as NebulaGeometry;const pts=g.points.map(p=>{const hi=config.highlightedGene?.toUpperCase()===p.feature.id.toUpperCase(),halo=p.radius*(2.8+p.feature.varianceRank*2),radius=hi?p.radius*1.8:p.radius;return `<g id="gene-${safeId(p.feature.id)}" data-gene="${escapeXml(p.feature.id)}"><circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${halo.toFixed(2)}" fill="${p.color}" fill-opacity="${hi ? .18 : .08}"/><circle cx="${p.x.toFixed(2)}" cy="${p.y.toFixed(2)}" r="${radius.toFixed(2)}" fill="${p.color}" fill-opacity="${hi?1:p.opacity.toFixed(3)}"/></g>`;}).join("");return wrapSvg(artwork,svgFrame(artwork,config,"template differential nebula v1.0.1 · supplied statistics")+`<line x1="${g.axisX}" y1="108" x2="${g.axisX}" y2="${g.baseY}" stroke="${artwork.palette.muted}" stroke-opacity=".15" stroke-dasharray="5 7"/>`+pts);}
 };
@@ -463,6 +463,15 @@ export const templateRegistry: Record<ArtTemplate["id"], ArtTemplate> = {
 };
 
 export const templates = Object.values(templateRegistry);
+
+const FEATURE_LIMITS: Record<ArtTemplate["id"], number> = {
+  "expression-constellation": Infinity, "transcriptome-weave": 2400, "differential-bloom": 1600,
+  "sample-fingerprint": 3000, "radial-pulse": 2600, "matrix-mosaic": 3200, "flow-field": 1800,
+  "gene-orbit-3d": 2600, "expression-terrain-3d": 2304, "differential-nebula": 2400,
+};
+export function getArtworkFeatures(data: VisualDataset, config: ArtworkConfig): VisualFeature[] {
+  return data.features.slice(0, Math.min(config.geneCount, FEATURE_LIMITS[config.template]));
+}
 
 function buildArtwork(data:VisualDataset,config:ArtworkConfig,geometry:unknown,hitRegions:HitRegion[],legend:PreparedArtwork["legend"]):PreparedArtwork{
   return { template:config.template,width:config.width,height:config.height,title:data.title,seed:config.seed,palette:THEMES[config.theme],geometry,hitRegions,legend };
