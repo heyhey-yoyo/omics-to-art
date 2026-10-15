@@ -1,4 +1,4 @@
-# Omics to Art｜组学画布 — 项目说明（供 AI 编程代理阅读）
+# Omics to Art｜组学艺术 — 项目说明（供 AI 编程代理阅读）
 
 本文件供 AI 编码代理使用。修改代码前请先阅读本文件。
 
@@ -30,7 +30,7 @@
 | `apps/web/src/limits.ts` | 硬限制常量（文件/解压/单行/画布/分享参数） |
 | `apps/web/src/styles.css` | 全局样式与视觉令牌 |
 | `apps/web/vite.config.ts` | Vite 配置（`/api` 代理到 127.0.0.1:8787） |
-| `apps/web/public/` | 静态资源（`_headers`、`favicon.svg`、`project-mark.svg`） |
+| `apps/web/public/` | 静态资源（`_headers`、`project-mark.svg`） |
 | `packages/shared/src` | 共享类型、`normalizeGse`、免责声明、`assertNever` |
 | `packages/data-engine/src` | 纯函数解析与统计（parseTextTable、表 → VisualDataset、demo 数据） |
 | `packages/art-engine/src` | 主题调色板、`SeededRandom`、`stableSeed`、ArtTemplate 接口、几何工具 |
@@ -68,7 +68,7 @@ npm run deploy                 # build && wrangler deploy
 ## 测试
 
 - Vitest 8 个文件：解析（引号/CRLF/log2/CPM）、差异表识别（raw P 不误标 padj）、文件分类、令牌（篡改/过期拒绝）、**可复现性**（同输入几何一致、seed 参与）、分享参数钳制、preset 存储，以及两种解析路径的默认边界、UTF-8 单行字节限制、P=0保留和模板实际绘制集合
-- Playwright E2E：两个 demo 均进入 studio；表达示例显示「数据护照」和四种导出项，差异示例激活「差异绽放」并显示「差异结果」；浏览器回归覆盖单样本后恢复全选，以及受限模板的护照/导出实际基因数和随机定位；验收还须覆盖 390px 宽度下无横向溢出。首次需运行 `npx playwright install chromium`
+- Playwright E2E：两个 demo 均进入 studio；表达示例显示「数据护照」和四种导出项，差异示例激活「差异绽放」并显示「差异结果」；浏览器回归覆盖单样本后恢复全选，以及受限模板的护照/导出实际基因数和随机定位；人工验收另需覆盖 390px 宽度下的横向溢出。首次需运行 `npx playwright install chromium`
 - 测试直接 import 源码 ts，无额外构建步骤
 
 发布检查：
@@ -83,7 +83,7 @@ npm run test:e2e
 - **版本管理**：对外版本号以 GitHub Release 为准；页面不显示版本号。代码内版本常量（根与各工作区的 `package.json`、内部依赖钉住版本、`wrangler.jsonc` 的 `APP_VERSION`）必须与最新 Release 对齐，改版本时用 `npm install --package-lock-only` 同步 lockfile；内部 `templateVersion` 等为模板机制版本，独立演进。
 - 严格分层：shared → data-engine → art-engine → templates → web；**模板绝不读 GEO 原始文本**，只消费 `VisualDataset`
 - 可复现性（核心约束）：布局禁止 `Math.random()`，一律用 `SeededRandom`（`stableSeed` FNV-1a 哈希）；随机种子的字段按模板方法文档说明，不能假定每个模板都包含样本 ID；分享链接总是把 `templateVersion` 升级为当前内置版本；SVG metadata 内嵌 `{template, seed}`
-- `data-engine` 与 `data.worker.ts` 的数据规则需同步维护；纯引擎用于完整表，浏览器采用有界候选流式处理。默认输出最多5000、样本最多100；`provenance.filtering` 的上限须与实际整数化及夹限后的处理上限同源，不能记录未经处理的请求值。解析结果保留合法P=0，仅在对数映射时截断
+- `data-engine` 与 `data.worker.ts` 的数据规则需同步维护；纯引擎用于完整表，浏览器采用有界候选流式处理。默认输出最多 5000、样本最多 100；`provenance.filtering` 的上限须与实际整数化及夹限后的处理上限同源，不能记录未经处理的请求值。解析结果保留合法 P=0，仅在对数映射时截断
 - 新模板必须实现：deterministic prepare、Canvas + SVG 双渲染（XML 转义、稳定元素 id）、简单+技术双图例；颜色不能是方向/分类的唯一编码
 - 差异结果只用投稿者提供的 log2FC/padj，`significanceKind` 区分 adjusted/p-value；UI 文案与错误消息全部为中文
 - 硬限制常量集中在 `apps/web/src/limits.ts`（文件/解压/单行/画布/分享参数）；样本列上限为 100；当前 UI 在 `apps/web/src/App.tsx` 请求并限制最多 5000 个艺术基因，`apps/web/src/data.worker.ts` 与 `packages/data-engine/src/index.ts` 的 maxFeatures 默认 5000、程序性硬上限 10000。改动需区分 UI 上限与引擎上限并同步各处。`TemplateId` 联合类型与 `templateRegistry` 需同步更新
@@ -114,12 +114,12 @@ npm run test:e2e
 
 - 静态资源（`apps/web/dist`）与 Worker 一次发布（Workers Static Assets）；`run_worker_first: ["/api/*"]` 勿动
 - Secrets：`NCBI_API_KEY`（可选）、`NCBI_EMAIL`、`PROXY_SIGNING_SECRET`（≥32 字节高熵）
-- 当前走 Cloudflare Git 集成（无 `.github/`、不使用 CI）；发布门禁见 `docs/operations.md`
+- 走 Cloudflare Git 集成（无 `.github/`、不使用 CI）；发布门禁见 `docs/operations.md`
 
 ## 安全与数据注意事项
 
 - 本地文件直接进浏览器 Web Worker，**绝不上传**；日志不含矩阵内容与分享参数
-- NCBI 代理：域名白名单（仅 ncbi.nlm.nih.gov 与 ftp.ncbi.nlm.nih.gov）+ 非内网 IP 校验、重定向逐跳重新校验（最多 3 跳）、HMAC 令牌 30 分钟 TTL、`timingSafeEqual`
+- NCBI 代理：域名白名单（仅 www.ncbi.nlm.nih.gov 与 ftp.ncbi.nlm.nih.gov）+ 非内网 IP 校验、重定向逐跳重新校验（最多 3 跳）、HMAC 令牌 30 分钟 TTL、`timingSafeEqual`
 - Range 头仅透传 `/^bytes=(?:\d+-\d*|-\d+)$/`；不透传 Content-Encoding 与任何用户请求头
 - 限流：每 IP 每分钟 90 次（内存级兜底，生产建议加 WAF 规则）；API 仅 GET/HEAD，无通配 CORS
 - 浏览器硬限制：源文件 300 MB、解压后 1 GB、单行 UTF-8 原始字节 16 MB、画布 1200 万像素、最多 100 样本列；当前 UI 最多 5000 艺术基因，处理引擎默认 5000、可配置硬上限 10000
